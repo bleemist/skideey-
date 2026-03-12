@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Skideey • Anonymous Random Chat</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    * { box-sizing: border-box; margin:0; padding:0; }
+    body {
+      background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+      color: #e0e0e0;
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 7vw, 3.2rem);
+      font-weight: 700;
+      background: linear-gradient(90deg, #ff7a00, #ffaa40);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 12px 0;
+      text-align: center;
+    }
+    header {
+      background: rgba(26,26,26,0.92);
+      backdrop-filter: blur(12px);
+      padding: 14px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 12px 0;
+    }
+    .tabs button {
+      background: #ff7a00;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s;
+      font-size: clamp(0.95rem, 3.5vw, 1.1rem);
+      min-width: 100px;
+      touch-action: manipulation;
+    }
+    .tabs button:hover, .tabs button.active {
+      background: #ffaa40;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255,122,0,0.4);
+    }
+    .messages {
+      height: 50vh;
+      max-height: 380px;
+      overflow-y: auto;
+      background: #111;
+      padding: 14px;
+      border-radius: 16px;
+      margin: 12px 0;
+      box-shadow: inset 0 2px 12px rgba(0,0,0,0.7);
+    }
+    .messages p {
+      margin: 10px 0;
+      padding: 12px 16px;
+      background: #1e1e1e;
+      border-radius: 14px;
+      word-break: break-word;
+      font-size: 1.05rem;
+      position: relative;
+    }
+    .reaction-trigger {
+      position: absolute;
+      right: 12px;
+      bottom: 8px;
+      font-size: 1.4rem;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    .reaction-trigger:hover { opacity: 1; }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 12px;
+      background: #222;
+      color: white;
+      font-size: 1.05rem;
+    }
+    button {
+      background: #ff7a00;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s;
+      font-size: 1.05rem;
+      min-width: 100px;
+      touch-action: manipulation;
+    }
+    button:hover { background: #ff9c3a; transform: translateY(-1px); }
+    button.report { background: #e63946; }
+    button.report:hover { background: #f48c96; }
+    .stats-card {
+      background: linear-gradient(145deg, #1a1a1a, #222);
+      border-radius: 20px;
+      padding: clamp(16px, 5vw, 28px);
+      margin: 16px auto;
+      max-width: 480px;
+      box-shadow: 0 12px 32px rgba(255,122,0,0.12);
+    }
+    .skipies-progress {
+      height: 14px;
+      background: #2a2a2a;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 16px 0;
+    }
+    .skipies-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #ff7a00, #ffaa40);
+      transition: width 0.7s ease-out;
+    }
+    .emoji-popup {
+      position: absolute;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      gap: 12px;
+      z-index: 1000;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    }
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 16px;
+    }
+    .modal-content {
+      background: #1a1a1a;
+      padding: clamp(20px, 6vw, 32px);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+      text-align: center;
+    }
+    #partnerBanner {
+      background: linear-gradient(90deg, #1f1f1f, #2a2a2a);
+      padding: 14px;
+      margin: 12px;
+      border-radius: 14px;
+      font-size: 1.05em;
+      color: #ddd;
+    }
+    .online, #pointsHeader {
+      font-size: 1.05rem;
+      color: #aaa;
+      margin: 6px 0;
+      text-align: center;
+    }
+    #ageGate {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 3000;
+      padding: 16px;
+    }
+    .ageCard {
+      background: #1a1a1a;
+      padding: clamp(24px, 8vw, 40px);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+    .ageCard h2 { color: #ff7a00; margin-bottom: 16px; font-size: 2rem; }
+    .ageCard label { display: block; margin: 20px 0; font-size: 1.1rem; }
+
+    #topicSelector {
+      margin: 20px 0;
+      padding: 16px;
+      background: #1e1e1e;
+      border-radius: 12px;
+    }
+    .topic-btn {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid #444;
+      background: none;
+      color: #ddd;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+    .topic-btn:hover { background: #333; border-color: #ff7a00; }
+    .topic-btn.active {
+      background: #ff7a00 !important;
+      color: black !important;
+      border-color: #ffaa40 !important;
+    }
+
+    @media (max-width: 500px) {
+      .tabs { gap: 8px; }
+      .tabs button { padding: 8px 16px; min-width: unset; font-size: 0.95rem; }
+      .messages { font-size: 0.98rem; padding: 12px; }
+      .reaction-trigger { font-size: 1.2rem; right: 8px; bottom: 6px; }
+      button { padding: 10px 20px; font-size: 1rem; min-width: 80px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- AGE GATE -->
+<div id="ageGate">
+  <div class="ageCard">
+    <h2>Skideey • 18+</h2>
+    <p>Adult anonymous conversations only.</p>
+    <input id="ageInput" type="number" placeholder="Your age" min="13" max="120">
+    <label style="margin:20px 0; display:block; font-size:1.1rem;">
+      <input type="checkbox" id="tosAccept"> I confirm I am 18+ and agree to the rules
+    </label>
+    <button onclick="checkAge()">Enter Skideey</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none; padding:16px;"></div>
+
+<!-- SAFETY MODAL -->
+<div id="safetyModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h2>Safety First</h2>
+    <ul style="text-align:left; margin:16px 0; padding-left:24px; font-size:1.05rem;">
+      <li>18+ only</li>
+      <li>No harassment or illegal content</li>
+      <li>Messages disappear on skip</li>
+      <li>Use Report if someone breaks rules</li>
+    </ul>
+    <button onclick="document.getElementById('safetyModal').style.display='none'">I Understand</button>
+  </div>
+</div>
+
+<!-- FINAL RATING MODAL -->
+<div id="finalRateModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h2>Rate your last chat</h2>
+    <div class="emoji-grid" id="finalEmojiGrid"></div>
+    <button onclick="document.getElementById('finalRateModal').style.display='none'" style="margin-top:20px;">Close</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let myUuid = crypto.randomUUID();
+let myStats = { skipies: 50, friends: 0, enemies: 0 };
+let selectedTopics = [];
+
+const reactionConfig = {
+  "👍": { delta: 6, friends: 1 },
+  "❤️": { delta: 9, friends: 1 },
+  "🔥": { delta: 7, friends: 1 },
+  "😂": { delta: 5, friends: 1 },
+  "👏": { delta: 6, friends: 1 },
+  "👎": { delta: -6, enemies: 1 },
+  "😡": { delta: -9, enemies: 1 },
+  "💀": { delta: -8, enemies: 1 }
+};
+
+function checkAge() {
+  const age = parseInt(document.getElementById("ageInput").value);
+  if (age >= 18 && document.getElementById("tosAccept").checked) {
+    document.getElementById("ageGate").style.display = "none";
+    renderApp();
+    socket.emit("ageAccepted");
+  } else {
+    alert("You must be 18+ to enter.");
+  }
+}
+
+function renderApp() {
+  document.getElementById("mainApp").style.display = "block";
+  document.getElementById("mainApp").innerHTML = `
+    <header>
+      <h1>Skideey</h1>
+      <div class="tabs">
+        <button onclick="showTab('public')">Public</button>
+        <button onclick="showTab('random')">Random</button>
+        <button onclick="showTab('stats')">Stats</button>
+      </div>
+      <div class="online">Online: <span id="onlineCount">0</span></div>
+      <div id="pointsHeader">SkiPies • <span id="headerSkiPies">50</span>%</div>
+    </header>
+
+    <input id="username" placeholder="Nickname (optional)" />
+
+    <section id="publicTab">
+      <h2>Public Chat</h2>
+      <div id="publicMessages" class="messages"></div>
+      <input id="publicInput" placeholder="Type a message..." />
+      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+        <button onclick="sendPublic()">Send</button>
+        <button onclick="sendGIF('public')">GIF</button>
+      </div>
+    </section>
+
+    <section id="randomTab" style="display:none;">
+      <h2>Random Chat</h2>
+
+      <div id="topicSelector" style="margin:20px 0; padding:16px; background:#1e1e1e; border-radius:12px;">
+        <h3 style="margin-bottom:16px;">Choose topics (optional – better matches)</h3>
+        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+          ${[
+            "Music", "Gaming", "Movies", "Memes", "Travel", "Tech", "Fitness",
+            "Food", "Books", "Anime", "Relationships", "Jokes", "Deep Talk", "Flirt",
+            "Sports", "Art", "Science", "Politics", "Fashion", "Cars"
+          ].map(t => `
+            <button class="topic-btn" data-topic="${t}">${t}</button>
+          `).join('')}
+        </div>
+        <p style="margin-top:16px; font-size:0.95em; color:#aaa; text-align:center;">
+          Selected: <span id="selectedTopicsCount">0</span>/3
+        </p>
+        <button id="startWithTopics" style="margin-top:16px; background:#ff7a00; padding:12px 32px; width:100%; max-width:300px; display:block; margin-left:auto; margin-right:auto;">
+          Find Match
+        </button>
+      </div>
+
+      <div id="chatContent" style="display:none;">
+        <div id="partnerBanner"></div>
+        <div id="randomMessages" class="messages"></div>
+        <div id="typing" style="color:#aaa; min-height:24px;"></div>
+        <input id="randomInput" oninput="typing()" placeholder="Type a message..." />
+        <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+          <button onclick="sendRandom()">Send</button>
+          <button onclick="sendGIF('random')">GIF</button>
+          <button onclick="skipRandom()">Skip</button>
+          <button class="report" onclick="reportUser()">Report</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="statsTab" style="display:none;">
+      <div class="stats-card">
+        <h2>Your SkiPies</h2>
+        <div class="skipies-progress">
+          <div class="skipies-bar" id="progressBar"></div>
+        </div>
+        <div class="skipies-big" id="bigSkiPies">50</div>
+        <div id="achievementTitle" style="font-size:1.35em; margin:12px 0; color:#ffaa40; font-weight:600;">
+          Newbie Connector
+        </div>
+
+        <div style="display:flex; justify-content:space-around; margin:25px 0; font-size:1.1em; flex-wrap:wrap; gap:20px;">
+          <div>❤️ Friends<br><span id="statsFriends" style="font-size:2.2em; color:#ff6b6b;">0</span></div>
+          <div>👎 Enemies<br><span id="statsEnemies" style="font-size:2.2em; color:#a0a0ff;">0</span></div>
+        </div>
+
+        <h3 style="margin:20px 0 10px; color:#ccc; text-align:center;">Achievements</h3>
+        <div id="badges" style="display:flex; gap:18px; justify-content:center; flex-wrap:wrap; min-height:60px;"></div>
+      </div>
+    </section>
+  `;
+
+  showTab("public");
+  socket.emit("register", myUuid);
+  updateStatsDisplay();
+
+  // Topic selection
+  document.querySelectorAll('.topic-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const topic = btn.dataset.topic;
+      if (selectedTopics.includes(topic)) {
+        selectedTopics = selectedTopics.filter(t => t !== topic);
+        btn.classList.remove('active');
+      } else if (selectedTopics.length < 3) {
+        selectedTopics.push(topic);
+        btn.classList.add('active');
+      }
+      document.getElementById("selectedTopicsCount").innerText = selectedTopics.length;
+    });
+  });
+
+  document.getElementById("startWithTopics").addEventListener('click', () => {
+    socket.emit("joinRandom", { topics: selectedTopics });
+    document.getElementById("topicSelector").style.display = "none";
+    document.getElementById("chatContent").style.display = "block";
+  });
+
+  // Safety modal
+  setTimeout(() => {
+    document.getElementById("safetyModal").style.display = "flex";
+  }, 600);
+}
+
+function showTab(tab) {
+  document.querySelectorAll("section").forEach(el => el.style.display = "none");
+  document.getElementById(tab + "Tab").style.display = "block";
+}
+
+function getName() {
+  return document.getElementById("username")?.value?.trim() || "Anonymous";
+}
+
+function updateStatsDisplay() {
+  const pct = Math.round(myStats.skipies);
+  document.getElementById("headerSkiPies").innerText = pct;
+  document.getElementById("bigSkiPies").innerText = pct;
+  document.getElementById("progressBar").style.width = pct + "%";
+
+  document.getElementById("statsFriends").innerText = myStats.friends;
+  document.getElementById("statsEnemies").innerText = myStats.enemies;
+
+  let title = "Newbie Connector";
+  if (pct >= 75) title = "Legend in the Making… So Close!";
+  else if (pct >= 70) title = "Epic Climb – Almost Legendary!";
+  else if (pct >= 65) title = "Rising Star – Keep Pushing!";
+  else if (pct >= 55) title = "Solid Vibes";
+  else if (myStats.friends > myStats.enemies * 2.5) title = "Loved by the Crowd ❤️";
+  else if (myStats.enemies > 10) title = "Polarizing Force 💀";
+
+  document.getElementById("achievementTitle").innerText = title;
+
+  let badges = [];
+  if (pct >= 70) badges.push({emoji:"🏆", title:"High Flyer – 70%+"});
+  if (myStats.friends >= 15) badges.push({emoji:"❤️‍🔥", title:"Crowd Favorite"});
+  if (myStats.enemies <= 4 && pct >= 60) badges.push({emoji:"🌟", title:"Almost Untouchable"});
+  if (myStats.friends >= 8 && myStats.enemies >= 8) badges.push({emoji:"⚖️", title:"Balanced Chaos"});
+
+  document.getElementById("badges").innerHTML = badges.length
+    ? badges.map(b => `<span style="font-size:38px; cursor:help;" title="${b.title}">${b.emoji}</span>`).join("")
+    : '<span style="color:#777; font-style:italic;">Keep chatting to unlock badges</span>';
+}
+
+// ─── Public Chat ─────────────────────────────────────────────────
+function sendPublic() {
+  const msg = document.getElementById("publicInput")?.value?.trim();
+  if (!msg) return;
+  socket.emit("publicMessage", { name: getName(), message: msg, senderUuid: myUuid });
+  document.getElementById("publicInput").value = "";
+}
+
+socket.on("publicMessage", data => {
+  const box = document.getElementById("publicMessages");
+  const p = document.createElement("p");
+  p.innerHTML = `<b>${data.name}</b>: ${data.message}`;
+  p.dataset.senderUuid = data.senderUuid || "";
+  addReactionTrigger(p);
+  box.appendChild(p);
+  box.scrollTop = box.scrollHeight;
+  setTimeout(() => p.remove(), 30000);
+});
+
+// ─── Random Chat ─────────────────────────────────────────────────
+function sendRandom() {
+  const msg = document.getElementById("randomInput")?.value?.trim();
+  if (!msg) return;
+  socket.emit("randomMessage", { name: getName(), message: msg, senderUuid: myUuid });
+  document.getElementById("randomInput").value = "";
+}
+
+socket.on("randomMessage", data => {
+  const box = document.getElementById("randomMessages");
+  const p = document.createElement("p");
+  p.innerHTML = `<b>${data.name}</b>: ${data.message}`;
+  p.dataset.senderUuid = data.senderUuid || "";
+  addReactionTrigger(p);
+  box.appendChild(p);
+  box.scrollTop = box.scrollHeight;
+  setTimeout(() => p.remove(), 30000);
+});
+
+// ─── Reaction Icon + Popup ───────────────────────────────────────
+function addReactionTrigger(p) {
+  const trigger = document.createElement("span");
+  trigger.innerHTML = "😊";
+  trigger.className = "reaction-trigger";
+  trigger.title = "React";
+
+  trigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    showReactionPopup(p.dataset.senderUuid, p);
+  });
+
+  p.appendChild(trigger);
+}
+
+let currentPopup = null;
+
+function showReactionPopup(targetUuid, messageElement) {
+  if (currentPopup) currentPopup.remove();
+
+  const popup = document.createElement("div");
+  popup.className = "emoji-popup";
+
+  const rect = messageElement.getBoundingClientRect();
+  popup.style.top = (rect.bottom + window.scrollY + 8) + "px";
+  popup.style.left = (rect.left + window.scrollX) + "px";
+
+  Object.keys(reactionConfig).forEach(emoji => {
+    const btn = document.createElement("button");
+    btn.innerHTML = emoji;
+    btn.style.fontSize = "28px";
+    btn.style.background = "none";
+    btn.style.border = "none";
+    btn.style.cursor = "pointer";
+    btn.addEventListener("click", () => {
+      socket.emit("sendReaction", { targetUuid, emoji });
+      popup.remove();
+      currentPopup = null;
+    });
+    popup.appendChild(btn);
+  });
+
+  document.body.appendChild(popup);
+  currentPopup = popup;
+
+  const closeOnClick = (e) => {
+    if (!popup.contains(e.target)) {
+      popup.remove();
+      currentPopup = null;
+      document.removeEventListener("click", closeOnClick);
+    }
+  };
+  setTimeout(() => document.addEventListener("click", closeOnClick), 10);
+}
+
+// ─── Other functions ─────────────────────────────────────────────
+function skipRandom() {
+  socket.emit("skipRandom");
+  document.getElementById("randomMessages").innerHTML = "";
+}
+
+socket.on("partnerLeft", () => {
+  document.getElementById("randomMessages").innerHTML = "";
+  document.getElementById("finalRateModal").style.display = "flex";
+  const grid = document.getElementById("finalEmojiGrid");
+  grid.innerHTML = Object.keys(reactionConfig).map(e =>
+    `<button onclick="socket.emit('sendReaction',{targetUuid:'lastPartner',emoji:'${e}'});document.getElementById('finalRateModal').style.display='none'">${e}</button>`
+  ).join("");
+});
+
+function typing() { socket.emit("typing", "random"); }
+
+socket.on("typing", () => {
+  document.getElementById("typing").innerText = "User typing...";
+  setTimeout(() => document.getElementById("typing").innerText = "", 1800);
+});
+
+function reportUser() {
+  socket.emit("report", {});
+  alert("Report sent — thank you.");
+}
+
+function sendGIF(type) {
+  const url = prompt("Paste GIF / image URL");
+  if (!url || !url.startsWith("http")) return;
+  socket.emit(type === "public" ? "publicGif" : "randomGif", { url, name: getName() });
+}
+
+socket.on("onlineUsers", count => document.getElementById("onlineCount").innerText = count);
+
+socket.on("statsUpdated", stats => {
+  myStats = stats;
+  updateStatsDisplay();
+});
+
+socket.on("partnerStats", stats => {
+  const banner = document.getElementById("partnerBanner");
+  banner.innerHTML = `Partner → SkiPies <b>${Math.round(stats.skipies)}%</b> ❤️${stats.friends} 👎${stats.enemies}`;
+  banner.style.display = "block";
+  setTimeout(() => banner.style.display = "none", 8000);
+});
+</script>
+</body>
+</html>

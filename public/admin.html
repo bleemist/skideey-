@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skideey Admin Panel</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a0a;
+      color: #e0e0e0;
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 16px;
+      line-height: 1.5;
+    }
+    h1 {
+      color: #ff7a00;
+      font-size: clamp(1.8rem, 6vw, 2.6rem);
+      text-align: center;
+      margin: 20px 0 30px;
+    }
+    .login-container {
+      max-width: 400px;
+      margin: 80px auto 0;
+      background: #1a1a1a;
+      padding: 40px 24px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+      text-align: center;
+    }
+    .login-container input {
+      width: 100%;
+      padding: 14px;
+      margin: 12px 0;
+      border-radius: 10px;
+      background: #111;
+      border: 1px solid #333;
+      color: white;
+      font-size: 1.1rem;
+    }
+    .login-container button {
+      width: 100%;
+      padding: 14px;
+      background: #ff7a00;
+      color: black;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .login-container button:hover { background: #ffaa40; }
+
+    #adminPanel { display: none; }
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .live-count {
+      color: #0f0;
+      font-weight: bold;
+      font-size: 1.4em;
+    }
+    .card {
+      background: #1a1a1a;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+    }
+    .card h2 {
+      color: #ffaa40;
+      margin-bottom: 16px;
+      font-size: 1.4rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #333;
+    }
+    th {
+      background: #222;
+      color: #ffaa40;
+      font-weight: 600;
+    }
+    tr:hover { background: #222; }
+    #logoutBtn {
+      background: #e63946;
+      color: white;
+      padding: 12px 32px;
+      border-radius: 12px;
+      border: none;
+      font-size: 1.1rem;
+      cursor: pointer;
+      margin-top: 20px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    #logoutBtn:hover { background: #f48c96; }
+
+    @media (max-width: 600px) {
+      .dashboard-header { flex-direction: column; text-align: center; }
+      .card { padding: 16px; }
+      table, th, td { font-size: 0.95rem; }
+      .emoji-cell { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-container" id="loginScreen">
+  <h1>Skideey Admin Panel</h1>
+  <input id="passInput" type="password" placeholder="Enter password" autocomplete="off" />
+  <button onclick="tryLogin()">Login</button>
+</div>
+
+<div id="adminPanel">
+  <div class="dashboard-header">
+    <h1>Skideey Live Dashboard</h1>
+    <span class="live-count">Online: <span id="onlineTotal">0</span></span>
+  </div>
+
+  <div class="card">
+    <h2>Most Used Emojis</h2>
+    <table id="emojiTable">
+      <thead>
+        <tr><th>Emoji</th><th>Count</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Country Distribution</h2>
+    <table id="countryTable">
+      <thead>
+        <tr><th>Country</th><th>Users</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>SkiPies Overview</h2>
+    <p>Average SkiPies: <strong id="avgSkipies">—</strong>%</p>
+    <p>Highest SkiPies: <strong id="maxSkipies">—</strong>%</p>
+    <p>Users ≥ 70%: <strong id="highSkipies">—</strong></p>
+  </div>
+
+  <button id="logoutBtn" onclick="logout()">Logout</button>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  let isAdmin = false;
+
+  function tryLogin() {
+    const pass = document.getElementById("passInput").value.trim();
+    if (!pass) return alert("Please enter the password");
+    socket.emit("adminLogin", pass);
+  }
+
+  socket.on("adminLoginSuccess", () => {
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("adminPanel").style.display = "block";
+    isAdmin = true;
+    socket.emit("requestAdminStats");
+  });
+
+  socket.on("adminStats", (data) => {
+    // Online count
+    document.getElementById("onlineTotal").innerText = data.online || 0;
+
+    // Emojis table
+    let emojiHtml = "";
+    if (data.emojis && Object.keys(data.emojis).length > 0) {
+      Object.entries(data.emojis)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 12)
+        .forEach(([emoji, count]) => {
+          emojiHtml += `<tr><td class="emoji-cell" style="font-size:2rem;">${emoji}</td><td>${count}</td></tr>`;
+        });
+    } else {
+      emojiHtml = '<tr><td colspan="2" style="text-align:center; color:#777;">No emoji data yet</td></tr>';
+    }
+    document.getElementById("emojiTable").querySelector("tbody").innerHTML = emojiHtml;
+
+    // Countries table
+    let countryHtml = "";
+    if (data.countries && Object.keys(data.countries).length > 0) {
+      Object.entries(data.countries)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([country, count]) => {
+          countryHtml += `<tr><td>${country}</td><td>${count}</td></tr>`;
+        });
+    } else {
+      countryHtml = '<tr><td colspan="2" style="text-align:center; color:#777;">No country data yet</td></tr>';
+    }
+    document.getElementById("countryTable").querySelector("tbody").innerHTML = countryHtml;
+
+    // SkiPies stats
+    document.getElementById("avgSkipies").innerText = data.avgSkipies ?? "—";
+    document.getElementById("maxSkipies").innerText = data.maxSkipies ?? "—";
+    document.getElementById("highSkipies").innerText = data.above70 ?? "—";
+  });
+
+  function logout() {
+    socket.disconnect();
+    location.reload();
+  }
+
+  // Auto-refresh stats every 5 seconds when logged in
+  setInterval(() => {
+    if (isAdmin) socket.emit("requestAdminStats");
+  }, 5000);
+</script>
+</body>
+</html>
