@@ -56,10 +56,10 @@ async function saveUsers(users) {
 
 // ==================== DATA STRUCTURES ====================
 let userSessions = {};
-let users = new Map();
-let waitingUsers = new Set();
-let videoCallUsers = new Map();
-const messageQueue = [];
+let users = new Map(); // socket.id -> user data
+let waitingUsers = new Set(); // Users waiting for random chat
+let videoCallUsers = new Map(); // Users in video calls
+const messageQueue = []; // Fast message queue
 let onlineCount = 0;
 
 // Monitoring
@@ -86,14 +86,14 @@ process.on('SIGINT', async () => {
 
 // ==================== REACTION CONFIG ====================
 const reactionConfig = {
-  "👍": { delta: 6, friends: 1 },
-  "❤️": { delta: 9, friends: 1 },
-  "🔥": { delta: 7, friends: 1 },
-  "😂": { delta: 5, friends: 1 },
-  "👏": { delta: 6, friends: 1 },
-  "👎": { delta: -6, enemies: 1 },
-  "😡": { delta: -9, enemies: 1 },
-  "💀": { delta: -8, enemies: 1 }
+  "👍": { delta: 0.6, friends: 0 },
+  "❤️": { delta: 0.9, friends: 1 },
+  "🔥": { delta: 0.7, friends: 0 },
+  "😂": { delta: 0.5, friends: 0 },
+  "👏": { delta: 0.6, friends: 0 },
+  "👎": { delta: -0.6, enemies: 0 },
+  "😡": { delta: -0.9, enemies: 1 },
+  "💀": { delta: -0.8, enemies: 0 }
 };
 
 // ==================== ICE SERVERS FOR WEBRTC ====================
@@ -120,7 +120,7 @@ setInterval(() => {
         name: msg.senderName,
         message: msg.content,
         senderUuid: msg.from,
-        timestamp: msg.timestamp
+        timestamp: Date.now()
       });
     }
   }
@@ -304,7 +304,6 @@ io.on("connection", async (socket) => {
       waitingUsers.add(socket.id);
       console.log(`⏳ ${user.username} added to waiting queue (${waitingUsers.size} waiting)`);
       
-      // Send waiting status to the client
       const position = Array.from(waitingUsers).indexOf(socket.id) + 1;
       socket.emit("waitingStatus", { 
         waitingCount: waitingUsers.size,
@@ -394,11 +393,20 @@ io.on("connection", async (socket) => {
     const filtered = data.message
       .replace(/fuck|shit|ass|bitch|cunt|nigger|faggot/gi, "***");
     
-    messageQueue.push({
-      from: socket.id,
-      to: socket.partner,
-      content: filtered,
-      senderName: user.username,
+    const partnerSocket = io.sockets.sockets.get(socket.partner);
+    if (partnerSocket) {
+      partnerSocket.emit("randomMessage", {
+        name: user.username,
+        message: filtered,
+        senderUuid: socket.id,
+        timestamp: Date.now()
+      });
+    }
+    
+    socket.emit("randomMessage", {
+      name: user.username,
+      message: filtered,
+      senderUuid: socket.id,
       timestamp: Date.now()
     });
   });
@@ -419,11 +427,20 @@ io.on("connection", async (socket) => {
   socket.on("randomGif", (data) => {
     if (!socket.partner || !data.url || !data.url.startsWith("http")) return;
     
-    messageQueue.push({
-      from: socket.id,
-      to: socket.partner,
-      content: `<img src="/proxy-image?url=${encodeURIComponent(data.url)}" style="max-width:200px; border-radius:10px;" loading="lazy">`,
-      senderName: user.username,
+    const partnerSocket = io.sockets.sockets.get(socket.partner);
+    if (partnerSocket) {
+      partnerSocket.emit("randomMessage", {
+        name: user.username,
+        message: `<img src="/proxy-image?url=${encodeURIComponent(data.url)}" style="max-width:200px; border-radius:10px;" loading="lazy">`,
+        senderUuid: socket.id,
+        timestamp: Date.now()
+      });
+    }
+    
+    socket.emit("randomMessage", {
+      name: user.username,
+      message: `<img src="/proxy-image?url=${encodeURIComponent(data.url)}" style="max-width:200px; border-radius:10px;" loading="lazy">`,
+      senderUuid: socket.id,
       timestamp: Date.now()
     });
   });
@@ -682,14 +699,41 @@ app.get("/health", (req, res) => {
   });
 });
 
-// ==================== START SERVER ====================
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`🚀 Skideey server running on port ${PORT}`);
-  console.log(`📱 Main app: http://localhost:${PORT}`);
-  console.log(`🔧 Admin: http://localhost:${PORT}/admin.html`);
-  console.log(`💾 User data saved to: ${DATA_FILE}`);
-  console.log(`📊 Total saved users: ${Object.keys(userSessions).length}`);
-  console.log(`🎥 Video calls supported with WebRTC`);
-  console.log(`❌ Cancel search feature enabled`);
-});
+// ==================== START SERVER WITH PORT FALLBACK ====================
+const DEFAULT_PORT = 3000;
+const MAX_PORT_ATTEMPTS = 10;
+
+function startServer(attemptPort) {
+  server.listen(attemptPort)
+    .on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        const nextPort = attemptPort + 1;
+        if (nextPort <= DEFAULT_PORT + MAX_PORT_ATTEMPTS) {
+          console.log(`⚠️ Port ${attemptPort} is in use, trying port ${nextPort}...`);
+          startServer(nextPort);
+        } else {
+          console.error(`❌ Could not find available port after ${MAX_PORT_ATTEMPTS} attempts`);
+          process.exit(1);
+        }
+      } else {
+        console.error('❌ Server error:', err);
+        process.exit(1);
+      }
+    })
+    .on('listening', () => {
+      const address = server.address();
+      console.log(`\n🚀 Skideey server running successfully!`);
+      console.log(`📱 Main app: http://localhost:${address.port}`);
+      console.log(`🔧 Admin: http://localhost:${address.port}/admin.html`);
+      console.log(`💾 User data saved to: ${DATA_FILE}`);
+      console.log(`📊 Total saved users: ${Object.keys(userSessions).length}`);
+      console.log(`🎥 Video calls supported with WebRTC`);
+      console.log(`✅ Skip and Report buttons working`);
+      console.log(`📱 Mobile-optimized UI with no duplicate messages`);
+      console.log(`\n⚡ Press Ctrl+C to stop the server\n`);
+    });
+}
+
+const PORT = process.env.PORT || DEFAULT_PORT;
+console.log(`🔍 Attempting to start server on port ${PORT}...`);
+startServer(parseInt(PORT));
