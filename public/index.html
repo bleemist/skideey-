@@ -1,600 +1,1956 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Skideey • Anonymous Random Chat</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Skideey • Gamified Anonymous Chat with Video</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-    * { box-sizing: border-box; margin:0; padding:0; }
     body {
-      background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+      background: #0a0a0a;
       color: #e0e0e0;
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       min-height: 100vh;
-      line-height: 1.5;
-      -webkit-font-smoothing: antialiased;
     }
-    h1 {
-      font-size: clamp(2.2rem, 7vw, 3.2rem);
-      font-weight: 700;
-      background: linear-gradient(90deg, #ff7a00, #ffaa40);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin: 12px 0;
-      text-align: center;
-    }
-    header {
-      background: rgba(26,26,26,0.92);
-      backdrop-filter: blur(12px);
-      padding: 14px 16px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    }
-    .tabs {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin: 12px 0;
-    }
-    .tabs button {
-      background: #ff7a00;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 999px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.25s;
-      font-size: clamp(0.95rem, 3.5vw, 1.1rem);
-      min-width: 100px;
-      touch-action: manipulation;
-    }
-    .tabs button:hover, .tabs button.active {
-      background: #ffaa40;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(255,122,0,0.4);
-    }
-    .messages {
-      height: 50vh;
-      max-height: 380px;
-      overflow-y: auto;
-      background: #111;
-      padding: 14px;
-      border-radius: 16px;
-      margin: 12px 0;
-      box-shadow: inset 0 2px 12px rgba(0,0,0,0.7);
-    }
-    .messages p {
-      margin: 10px 0;
-      padding: 12px 16px;
-      background: #1e1e1e;
-      border-radius: 14px;
-      word-break: break-word;
-      font-size: 1.05rem;
-      position: relative;
-    }
-    .reaction-trigger {
-      position: absolute;
-      right: 12px;
-      bottom: 8px;
-      font-size: 1.4rem;
-      cursor: pointer;
-      opacity: 0.7;
-      transition: opacity 0.2s;
-    }
-    .reaction-trigger:hover { opacity: 1; }
-    input[type="text"], input[type="number"] {
-      width: 100%;
-      padding: 14px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 12px;
-      background: #222;
-      color: white;
-      font-size: 1.05rem;
-    }
-    button {
-      background: #ff7a00;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.25s;
-      font-size: 1.05rem;
-      min-width: 100px;
-      touch-action: manipulation;
-    }
-    button:hover { background: #ff9c3a; transform: translateY(-1px); }
-    button.report { background: #e63946; }
-    button.report:hover { background: #f48c96; }
-    .stats-card {
-      background: linear-gradient(145deg, #1a1a1a, #222);
-      border-radius: 20px;
-      padding: clamp(16px, 5vw, 28px);
-      margin: 16px auto;
-      max-width: 480px;
-      box-shadow: 0 12px 32px rgba(255,122,0,0.12);
-    }
-    .skipies-progress {
-      height: 14px;
-      background: #2a2a2a;
-      border-radius: 999px;
-      overflow: hidden;
-      margin: 16px 0;
-    }
-    .skipies-bar {
-      height: 100%;
-      background: linear-gradient(90deg, #ff7a00, #ffaa40);
-      transition: width 0.7s ease-out;
-    }
-    .emoji-popup {
-      position: absolute;
-      background: #222;
-      border: 1px solid #444;
-      border-radius: 12px;
-      padding: 10px;
-      display: flex;
-      gap: 12px;
-      z-index: 1000;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-    }
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.92);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-      padding: 16px;
-    }
-    .modal-content {
-      background: #1a1a1a;
-      padding: clamp(20px, 6vw, 32px);
-      border-radius: 20px;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
-      text-align: center;
-    }
-    #partnerBanner {
-      background: linear-gradient(90deg, #1f1f1f, #2a2a2a);
-      padding: 14px;
-      margin: 12px;
-      border-radius: 14px;
-      font-size: 1.05em;
-      color: #ddd;
-    }
-    .online, #pointsHeader {
-      font-size: 1.05rem;
-      color: #aaa;
-      margin: 6px 0;
-      text-align: center;
-    }
+
+    /* Age Gate */
     #ageGate {
       position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.95);
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #0a0a0a;
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 3000;
       padding: 16px;
     }
-    .ageCard {
-      background: #1a1a1a;
-      padding: clamp(24px, 8vw, 40px);
-      border-radius: 16px;
-      width: 100%;
-      max-width: 420px;
-      text-align: center;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-    }
-    .ageCard h2 { color: #ff7a00; margin-bottom: 16px; font-size: 2rem; }
-    .ageCard label { display: block; margin: 20px 0; font-size: 1.1rem; }
 
-    #topicSelector {
-      margin: 20px 0;
-      padding: 16px;
-      background: #1e1e1e;
-      border-radius: 12px;
+    .age-card {
+      background: #1a1a1a;
+      padding: 32px;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      border: 1px solid #333;
     }
-    .topic-btn {
-      padding: 8px 16px;
-      border-radius: 999px;
-      border: 1px solid #444;
-      background: none;
-      color: #ddd;
+
+    .age-card h2 {
+      color: #ff7a00;
+      margin-bottom: 20px;
+      font-size: 2rem;
+    }
+
+    .age-card input {
+      width: 100%;
+      padding: 16px;
+      margin: 10px 0;
+      background: #222;
+      border: 2px solid #333;
+      border-radius: 12px;
+      color: white;
+      font-size: 1rem;
+    }
+
+    .age-card input:focus {
+      outline: none;
+      border-color: #ff7a00;
+    }
+
+    .age-card label {
+      display: block;
+      margin: 20px 0;
+      color: #aaa;
       cursor: pointer;
-      font-size: 0.95rem;
+    }
+
+    .age-card button {
+      background: #ff7a00;
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      font-size: 1.1rem;
+    }
+
+    .age-card button:hover {
+      background: #ff9429;
+    }
+
+    /* Main App */
+    #mainApp {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    /* Header */
+    header {
+      background: #1a1a1a;
+      padding: 16px;
+      border-radius: 16px;
+      margin-bottom: 16px;
+      border: 1px solid #333;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      color: #ff7a00;
+      font-size: 2rem;
+    }
+
+    .online-badge {
+      background: #00c851;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+    }
+
+    .user-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #333;
+    }
+
+    #displayUsername {
+      color: #ffaa40;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #displayUsername:hover {
+      text-decoration: underline;
+    }
+
+    .skipies-badge {
+      background: rgba(255,122,0,0.2);
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,122,0,0.3);
+    }
+
+    #headerSkiPies {
+      color: #ff7a00;
+      font-weight: 700;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: 2px solid #333;
+      color: #aaa;
+      padding: 10px;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .tab-btn:hover {
+      border-color: #ff7a00;
+      color: #ff7a00;
+    }
+
+    .tab-btn.active {
+      background: #ff7a00;
+      border-color: #ff7a00;
+      color: white;
+    }
+
+    /* Messages Container */
+    .messages-container {
+      height: 400px;
+      overflow-y: auto;
+      background: #111;
+      border-radius: 16px;
+      padding: 16px;
+      margin: 16px 0;
+      border: 1px solid #333;
+      scroll-behavior: smooth;
+    }
+
+    .message {
+      margin: 12px 0;
+      padding: 10px 14px;
+      border-radius: 18px;
+      max-width: 80%;
+      word-break: break-word;
+      position: relative;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.own {
+      background: #ff7a00;
+      color: white;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.other {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      margin-right: auto;
+      border-bottom-left-radius: 4px;
+    }
+
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      opacity: 0.8;
+      margin-bottom: 4px;
+    }
+
+    .message-sender {
+      font-weight: 600;
+    }
+
+    .message-time {
+      font-size: 0.7rem;
+    }
+
+    .message-content {
+      line-height: 1.4;
+    }
+
+    .message-content img {
+      max-width: 200px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .message-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .message:hover .message-footer {
+      opacity: 1;
+    }
+
+    .reaction-btn {
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 20px;
       transition: all 0.2s;
     }
-    .topic-btn:hover { background: #333; border-color: #ff7a00; }
-    .topic-btn.active {
-      background: #ff7a00 !important;
-      color: black !important;
-      border-color: #ffaa40 !important;
+
+    .reaction-btn:hover {
+      background: rgba(255,122,0,0.2);
+      color: #ff7a00;
+      transform: scale(1.1);
     }
 
-    @media (max-width: 500px) {
-      .tabs { gap: 8px; }
-      .tabs button { padding: 8px 16px; min-width: unset; font-size: 0.95rem; }
-      .messages { font-size: 0.98rem; padding: 12px; }
-      .reaction-trigger { font-size: 1.2rem; right: 8px; bottom: 6px; }
-      button { padding: 10px 20px; font-size: 1rem; min-width: 80px; }
+    /* Emoji Picker */
+    .emoji-picker {
+      position: absolute;
+      background: #1f1f1f;
+      border-radius: 40px;
+      padding: 8px 12px;
+      display: flex;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      z-index: 1000;
+      border: 1px solid #333;
+      animation: popIn 0.2s ease;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .emoji-option {
+      background: none;
+      border: none;
+      font-size: 1.8rem;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .emoji-option:hover {
+      background: rgba(255,122,0,0.2);
+      transform: scale(1.2);
+    }
+
+    /* Input Area */
+    .input-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .message-input {
+      flex: 1;
+      padding: 14px;
+      background: #1a1a1a;
+      border: 2px solid #333;
+      border-radius: 30px;
+      color: white;
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+
+    .message-input:focus {
+      outline: none;
+      border-color: #ff7a00;
+    }
+
+    .send-btn {
+      width: 50px;
+      height: 50px;
+      background: #ff7a00;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+
+    .send-btn:hover {
+      background: #ff9429;
+      transform: scale(1.1) rotate(90deg);
+    }
+
+    .skip-btn {
+      width: 50px;
+      height: 50px;
+      background: #ffbb33;
+      color: black;
+      border: none;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .skip-btn:hover {
+      background: #ffcc66;
+      transform: scale(1.1);
+    }
+
+    .cancel-btn {
+      width: auto;
+      padding: 10px 20px;
+      height: auto;
+      background: #e63946;
+      color: white;
+      border: none;
+      border-radius: 30px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cancel-btn:hover {
+      background: #ff4d5e;
+      transform: scale(1.05);
+    }
+
+    .report-btn {
+      width: 50px;
+      height: 50px;
+      background: #e63946;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .report-btn:hover {
+      background: #ff4d5e;
+      transform: scale(1.1);
+    }
+
+    .icon-btn {
+      width: 50px;
+      height: 50px;
+      background: #222;
+      color: #aaa;
+      border: none;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .icon-btn:hover {
+      background: #333;
+      color: #ff7a00;
+      transform: scale(1.1);
+    }
+
+    /* Topic Selector */
+    .topic-selector {
+      background: #1a1a1a;
+      border-radius: 16px;
+      padding: 20px;
+      margin: 16px 0;
+      border: 1px solid #333;
+    }
+
+    .topic-selector h3 {
+      color: #ffaa40;
+      margin-bottom: 16px;
+    }
+
+    .topics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .topic-btn {
+      background: #222;
+      border: 2px solid #333;
+      color: #aaa;
+      padding: 10px;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .topic-btn:hover {
+      border-color: #ff7a00;
+      color: #ff7a00;
+    }
+
+    .topic-btn.active {
+      background: #ff7a00;
+      border-color: #ff7a00;
+      color: white;
+    }
+
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #333;
+      transition: .3s;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .3s;
+    }
+
+    input:checked + .slider {
+      background-color: #ff7a00;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    .slider.round {
+      border-radius: 34px;
+    }
+
+    .slider.round:before {
+      border-radius: 50%;
+    }
+
+    .video-toggle-container {
+      margin: 20px 0;
+      padding: 15px;
+      background: #222;
+      border-radius: 12px;
+      border: 1px solid #333;
+    }
+
+    .video-toggle-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .video-toggle-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .video-toggle-title span:first-child {
+      font-size: 1.5rem;
+    }
+
+    .video-toggle-title span:last-child {
+      color: #ffaa40;
+      font-weight: 600;
+    }
+
+    .video-toggle-description {
+      color: #aaa;
+      font-size: 0.9rem;
+      margin-top: 5px;
+    }
+
+    /* Video Call Container */
+    #videoContainer {
+      margin: 16px 0;
+    }
+
+    .video-grid {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .video-box {
+      flex: 1;
+      background: #1a1a1a;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid #333;
+    }
+
+    .video-box.active {
+      border-color: #ff7a00;
+    }
+
+    .video-element {
+      width: 100%;
+      height: 300px;
+      background: #000;
+      object-fit: cover;
+    }
+
+    .video-label {
+      padding: 8px;
+      text-align: center;
+      background: #222;
+      color: #aaa;
+      font-size: 0.9rem;
+    }
+
+    .video-controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 10px 0;
+    }
+
+    .control-btn {
+      width: 50px;
+      height: 50px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.2rem;
+      transition: all 0.3s;
+    }
+
+    .control-btn:hover {
+      transform: scale(1.1);
+    }
+
+    .control-btn.active {
+      background: #ff7a00;
+      color: white;
+    }
+
+    .call-status {
+      text-align: center;
+      color: #aaa;
+      font-size: 0.9rem;
+      margin: 10px 0;
+    }
+
+    .find-match-btn {
+      background: #ff7a00;
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      font-size: 1.1rem;
+      margin-top: 16px;
+      transition: all 0.3s;
+    }
+
+    .find-match-btn:hover {
+      background: #ff9429;
+      transform: translateY(-2px);
+    }
+
+    .find-match-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Partner Banner */
+    .partner-banner {
+      background: linear-gradient(90deg, #1a1a1a, rgba(255,122,0,0.2));
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 12px;
+      border-left: 4px solid #ff7a00;
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+
+    .partner-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .partner-name {
+      font-weight: 600;
+      color: #ffaa40;
+    }
+
+    .partner-stats {
+      color: #aaa;
+      font-size: 0.9rem;
+    }
+
+    /* Loading Animation */
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      background: #1a1a1a;
+      border-radius: 16px;
+      margin: 16px 0;
+      border: 1px solid #333;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255,122,0,0.1);
+      border-top: 4px solid #ff7a00;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: #aaa;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+
+    .loading-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .loading-dots span {
+      width: 8px;
+      height: 8px;
+      background: #ff7a00;
+      border-radius: 50%;
+      animation: dots 1.4s infinite;
+    }
+
+    .loading-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .loading-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes dots {
+      0%, 60%, 100% { transform: scale(0.3); opacity: 0.3; }
+      30% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Reaction Toast */
+    .reaction-toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a1a;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 40px;
+      border-left: 4px solid #ff7a00;
+      animation: slideUp 0.3s ease;
+      z-index: 2000;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    .reaction-toast.self {
+      background: linear-gradient(135deg, #ff7a00, #ffaa40);
+      border-left: 4px solid white;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateX(-50%) translateY(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* Reaction Animation */
+    .reaction-animation {
+      position: fixed;
+      font-size: 3rem;
+      pointer-events: none;
+      animation: floatUp 1s ease-out forwards;
+      z-index: 5000;
+      filter: drop-shadow(0 0 10px rgba(255,122,0,0.5));
+    }
+
+    @keyframes floatUp {
+      0% {
+        transform: translateY(0) scale(0.5);
+        opacity: 0;
+      }
+      20% {
+        transform: translateY(-30px) scale(1.2);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-100px) scale(1);
+        opacity: 0;
+      }
+    }
+
+    /* Stats */
+    .stats-card {
+      background: #1a1a1a;
+      border-radius: 16px;
+      padding: 24px;
+      margin: 16px 0;
+      border: 1px solid #333;
+    }
+
+    .skipies-progress {
+      height: 20px;
+      background: #222;
+      border-radius: 30px;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+
+    .skipies-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #ff7a00, #ffaa40);
+      transition: width 0.3s ease;
+    }
+
+    .skipies-big {
+      font-size: 4rem;
+      font-weight: 700;
+      color: #ff7a00;
+      text-align: center;
+      text-shadow: 0 0 20px rgba(255,122,0,0.3);
+    }
+
+    .achievement-title {
+      text-align: center;
+      color: #ffaa40;
+      font-weight: 600;
+      margin: 16px 0;
+      padding: 12px;
+      background: rgba(255,122,0,0.1);
+      border-radius: 30px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 16px;
+      background: #222;
+      border-radius: 12px;
+    }
+
+    .stat-label {
+      display: block;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #ff7a00;
+      display: block;
+    }
+
+    .badges-section {
+      margin-top: 30px;
+    }
+
+    .badges-section h3 {
+      color: #aaa;
+      margin-bottom: 16px;
+    }
+
+    .badges-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+      gap: 16px;
+    }
+
+    .badge {
+      font-size: 2.5rem;
+      filter: drop-shadow(0 0 10px rgba(255,122,0,0.3));
+      transition: all 0.3s;
+      cursor: help;
+      text-align: center;
+    }
+
+    .badge:hover {
+      transform: scale(1.2) rotate(5deg);
+    }
+
+    .no-badges {
+      color: #666;
+      font-style: italic;
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 20px;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 16px;
+    }
+
+    .modal-content {
+      background: #1a1a1a;
+      padding: 32px;
+      border-radius: 24px;
+      max-width: 400px;
+      width: 100%;
+      border: 1px solid #333;
+    }
+
+    .modal-content h2 {
+      color: #ff7a00;
+      margin-bottom: 20px;
+    }
+
+    .modal-content button {
+      background: #ff7a00;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 30px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 1rem;
+      margin-top: 20px;
+    }
+
+    .emoji-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .emoji-grid button {
+      background: #222;
+      border: 2px solid #333;
+      border-radius: 16px;
+      padding: 16px;
+      font-size: 2rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .emoji-grid button:hover {
+      border-color: #ff7a00;
+      transform: scale(1.1);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      border-radius: 40px;
+      color: white;
+      animation: slideUp 0.3s ease;
+      z-index: 3000;
+    }
+
+    .toast.success {
+      background: #00c851;
+    }
+
+    .toast.error {
+      background: #e63946;
+    }
+
+    .toast.info {
+      background: #ff7a00;
+    }
+
+    /* Tab Content */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Utility Classes */
+    .hidden {
+      display: none !important;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .message {
+        max-width: 90%;
+      }
+
+      .topics-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .input-container {
+        gap: 5px;
+      }
+
+      .send-btn, .skip-btn, .report-btn, .icon-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 1rem;
+      }
+      
+      .cancel-btn {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+      }
+      
+      .emoji-picker {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        top: auto;
+        width: 90%;
+        justify-content: center;
+        animation: slideUpPicker 0.3s ease;
+      }
+      
+      @keyframes slideUpPicker {
+        from { transform: translateX(-50%) translateY(100%); opacity: 0; }
+        to { transform: translateX(-50%) translateY(0); opacity: 1; }
+      }
+      
+      .emoji-option {
+        width: 40px;
+        height: 40px;
+        font-size: 1.5rem;
+      }
+
+      .video-grid {
+        flex-direction: column;
+      }
+
+      .video-element {
+        height: 200px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .topics-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
   </style>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
 
-<!-- AGE GATE -->
+<!-- Age Gate -->
 <div id="ageGate">
-  <div class="ageCard">
-    <h2>Skideey • 18+</h2>
-    <p>Adult anonymous conversations only.</p>
-    <input id="ageInput" type="number" placeholder="Your age" min="13" max="120">
-    <label style="margin:20px 0; display:block; font-size:1.1rem;">
-      <input type="checkbox" id="tosAccept"> I confirm I am 18+ and agree to the rules
+  <div class="age-card">
+    <h2>🎮 Skideey</h2>
+    <p style="color: #aaa; margin-bottom: 20px;">18+ Anonymous Chat with Reputation System</p>
+    <input type="number" id="ageInput" placeholder="Enter your age" min="18" max="120">
+    <label>
+      <input type="checkbox" id="agreeCheck"> I confirm that I am 18 years or older
     </label>
-    <button onclick="checkAge()">Enter Skideey</button>
+    <button onclick="enterSite()">Enter Skideey</button>
   </div>
 </div>
 
-<!-- MAIN APP -->
-<div id="mainApp" style="display:none; padding:16px;"></div>
-
-<!-- SAFETY MODAL -->
-<div id="safetyModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <h2>Safety First</h2>
-    <ul style="text-align:left; margin:16px 0; padding-left:24px; font-size:1.05rem;">
-      <li>18+ only</li>
-      <li>No harassment or illegal content</li>
-      <li>Messages disappear on skip</li>
-      <li>Use Report if someone breaks rules</li>
-    </ul>
-    <button onclick="document.getElementById('safetyModal').style.display='none'">I Understand</button>
-  </div>
-</div>
-
-<!-- FINAL RATING MODAL -->
-<div id="finalRateModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <h2>Rate your last chat</h2>
-    <div class="emoji-grid" id="finalEmojiGrid"></div>
-    <button onclick="document.getElementById('finalRateModal').style.display='none'" style="margin-top:20px;">Close</button>
-  </div>
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script>
-const socket = io();
-let myUuid = crypto.randomUUID();
-let myStats = { skipies: 50, friends: 0, enemies: 0 };
-let selectedTopics = [];
-
-const reactionConfig = {
-  "👍": { delta: 6, friends: 1 },
-  "❤️": { delta: 9, friends: 1 },
-  "🔥": { delta: 7, friends: 1 },
-  "😂": { delta: 5, friends: 1 },
-  "👏": { delta: 6, friends: 1 },
-  "👎": { delta: -6, enemies: 1 },
-  "😡": { delta: -9, enemies: 1 },
-  "💀": { delta: -8, enemies: 1 }
-};
-
-function checkAge() {
-  const age = parseInt(document.getElementById("ageInput").value);
-  if (age >= 18 && document.getElementById("tosAccept").checked) {
-    document.getElementById("ageGate").style.display = "none";
-    renderApp();
-    socket.emit("ageAccepted");
-  } else {
-    alert("You must be 18+ to enter.");
-  }
-}
-
-function renderApp() {
-  document.getElementById("mainApp").style.display = "block";
-  document.getElementById("mainApp").innerHTML = `
-    <header>
+<!-- Main App -->
+<div id="mainApp" style="display: none;">
+  <header>
+    <div class="header-top">
       <h1>Skideey</h1>
-      <div class="tabs">
-        <button onclick="showTab('public')">Public</button>
-        <button onclick="showTab('random')">Random</button>
-        <button onclick="showTab('stats')">Stats</button>
+      <span class="online-badge" id="onlineCount">0 online</span>
+    </div>
+    
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('random')">🎲 Random Chat</button>
+      <button class="tab-btn" onclick="switchTab('public')">🌍 Public Chat</button>
+      <button class="tab-btn" onclick="switchTab('stats')">📊 My Stats</button>
+    </div>
+
+    <div class="user-info">
+      <span id="displayUsername" onclick="changeUsername()">Skd******</span>
+      <span class="skipies-badge">SkiPies: <span id="headerSkiPies">50</span>%</span>
+    </div>
+  </header>
+
+  <!-- Random Chat Tab -->
+  <div id="randomTab" class="tab-content active">
+    <div id="topicSelector" class="topic-selector">
+      <h3>Choose topics (up to 3 for better matches)</h3>
+      <div class="topics-grid" id="topicsGrid">
+        <button class="topic-btn" data-topic="Music">Music</button>
+        <button class="topic-btn" data-topic="Gaming">Gaming</button>
+        <button class="topic-btn" data-topic="Movies">Movies</button>
+        <button class="topic-btn" data-topic="Memes">Memes</button>
+        <button class="topic-btn" data-topic="Tech">Tech</button>
+        <button class="topic-btn" data-topic="Sports">Sports</button>
+        <button class="topic-btn" data-topic="Anime">Anime</button>
+        <button class="topic-btn" data-topic="Food">Food</button>
+        <button class="topic-btn" data-topic="Travel">Travel</button>
+        <button class="topic-btn" data-topic="Books">Books</button>
+        <button class="topic-btn" data-topic="Fitness">Fitness</button>
+        <button class="topic-btn" data-topic="Art">Art</button>
       </div>
-      <div class="online">Online: <span id="onlineCount">0</span></div>
-      <div id="pointsHeader">SkiPies • <span id="headerSkiPies">50</span>%</div>
-    </header>
-
-    <input id="username" placeholder="Nickname (optional)" />
-
-    <section id="publicTab">
-      <h2>Public Chat</h2>
-      <div id="publicMessages" class="messages"></div>
-      <input id="publicInput" placeholder="Type a message..." />
-      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
-        <button onclick="sendPublic()">Send</button>
-        <button onclick="sendGIF('public')">GIF</button>
-      </div>
-    </section>
-
-    <section id="randomTab" style="display:none;">
-      <h2>Random Chat</h2>
-
-      <div id="topicSelector" style="margin:20px 0; padding:16px; background:#1e1e1e; border-radius:12px;">
-        <h3 style="margin-bottom:16px;">Choose topics (optional – better matches)</h3>
-        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
-          ${[
-            "Music", "Gaming", "Movies", "Memes", "Travel", "Tech", "Fitness",
-            "Food", "Books", "Anime", "Relationships", "Jokes", "Deep Talk", "Flirt",
-            "Sports", "Art", "Science", "Politics", "Fashion", "Cars"
-          ].map(t => `
-            <button class="topic-btn" data-topic="${t}">${t}</button>
-          `).join('')}
+      
+      <!-- Video Call Toggle -->
+      <div class="video-toggle-container">
+        <div class="video-toggle-header">
+          <div class="video-toggle-title">
+            <span>🎥</span>
+            <span>Video Call Mode</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="videoToggle">
+            <span class="slider round"></span>
+          </label>
         </div>
-        <p style="margin-top:16px; font-size:0.95em; color:#aaa; text-align:center;">
-          Selected: <span id="selectedTopicsCount">0</span>/3
+        <p class="video-toggle-description">
+          When enabled, you'll be matched with users who also want video chat
         </p>
-        <button id="startWithTopics" style="margin-top:16px; background:#ff7a00; padding:12px 32px; width:100%; max-width:300px; display:block; margin-left:auto; margin-right:auto;">
-          Find Match
+      </div>
+      
+      <button class="find-match-btn" onclick="findMatch()" id="findMatchBtn">🔍 Find Random Match</button>
+    </div>
+
+    <!-- Video Call Container -->
+    <div id="videoContainer" style="display: none;">
+      <div class="video-grid">
+        <div class="video-box active">
+          <video id="localVideo" class="video-element" autoplay muted playsinline></video>
+          <div class="video-label">
+            You <span id="localVideoStatus">(connecting...)</span>
+          </div>
+        </div>
+        <div class="video-box">
+          <video id="remoteVideo" class="video-element" autoplay playsinline></video>
+          <div class="video-label" id="remoteVideoLabel">
+            Partner (waiting...)
+          </div>
+        </div>
+      </div>
+      <div class="video-controls">
+        <button id="toggleAudioBtn" class="control-btn" onclick="toggleAudio()" style="background: #ff7a00;">🎤</button>
+        <button id="toggleVideoBtn" class="control-btn" onclick="toggleVideo()" style="background: #ff7a00;">📹</button>
+        <button id="endCallBtn" class="control-btn" onclick="endVideoCall()" style="background: #e63946;">📞</button>
+      </div>
+      <div class="call-status" id="callStatus">
+        Ready to connect...
+      </div>
+    </div>
+
+    <div id="chatContainer" style="display: none;">
+      <div id="partnerBanner" class="partner-banner"></div>
+      <div id="randomMessages" class="messages-container"></div>
+      <div class="input-container">
+        <input type="text" id="randomInput" class="message-input" placeholder="Type a message..." maxlength="4000">
+        <button class="send-btn" onclick="sendRandom()">➤</button>
+        <button class="icon-btn" onclick="openGifPicker('random')">🎨</button>
+        <button class="skip-btn" onclick="skipRandom()">⏭</button>
+        <button class="report-btn" onclick="reportUser()">⚠️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Public Chat Tab -->
+  <div id="publicTab" class="tab-content">
+    <div id="publicMessages" class="messages-container"></div>
+    <div class="input-container">
+      <input type="text" id="publicInput" class="message-input" placeholder="Type a public message..." maxlength="4000">
+      <button class="send-btn" onclick="sendPublic()">➤</button>
+      <button class="icon-btn" onclick="openGifPicker('public')">🎨</button>
+    </div>
+  </div>
+
+  <!-- Stats Tab -->
+  <div id="statsTab" class="tab-content">
+    <div class="stats-card">
+      <h2>Your SkiPies</h2>
+      <div class="skipies-progress">
+        <div class="skipies-bar" id="progressBar" style="width: 50%"></div>
+      </div>
+      <div class="skipies-big" id="bigSkiPies">50</div>
+      
+      <div class="achievement-title" id="achievementTitle">Newbie Connector</div>
+      
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-label">❤️ Friends</span>
+          <span class="stat-value" id="statsFriends">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">👎 Enemies</span>
+          <span class="stat-value" id="statsEnemies">0</span>
+        </div>
+      </div>
+
+      <div class="badges-section">
+        <h3>Achievements</h3>
+        <div id="badges" class="badges-grid">
+          <span class="no-badges">Keep chatting to unlock badges</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Safety Modal -->
+<div id="safetyModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <h2>🛡️ Safety First</h2>
+    <ul style="margin: 20px 0; padding-left: 20px; color: #aaa;">
+      <li>18+ only community</li>
+      <li>No harassment or illegal content</li>
+      <li>Report inappropriate users</li>
+      <li>Messages disappear on skip</li>
+    </ul>
+    <button onclick="closeModal('safetyModal')">I Understand</button>
+  </div>
+</div>
+
+<!-- Ban Modal -->
+<div id="banModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <h2 style="color: #e63946;">⚠️ Account Restricted</h2>
+    <p id="banMessage" style="margin: 20px 0; color: #aaa;"></p>
+    <p id="banExpiry" style="margin: 20px 0; color: #aaa;"></p>
+    <button onclick="closeModal('banModal')">Close</button>
+  </div>
+</div>
+
+<!-- Rate Modal -->
+<div id="rateModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <h2>Rate Your Chat</h2>
+    <div class="emoji-grid" id="finalEmojiGrid">
+      <button onclick="sendReaction('👍')">👍</button>
+      <button onclick="sendReaction('❤️')">❤️</button>
+      <button onclick="sendReaction('🔥')">🔥</button>
+      <button onclick="sendReaction('😂')">😂</button>
+      <button onclick="sendReaction('👏')">👏</button>
+      <button onclick="sendReaction('👎')">👎</button>
+      <button onclick="sendReaction('😡')">😡</button>
+      <button onclick="sendReaction('💀')">💀</button>
+    </div>
+    <button onclick="closeModal('rateModal')">Close</button>
+  </div>
+</div>
+
+<script>
+  // ==================== GLOBAL VARIABLES ====================
+  let socket;
+  let userData = null;
+  let selectedTopics = [];
+  let currentPartner = null;
+  let messageHistory = [];
+  let deviceId = localStorage.getItem('deviceId');
+  
+  // Video call variables
+  let localStream = null;
+  let peerConnection = null;
+  let videoEnabled = false;
+  let audioEnabled = true;
+  
+  // Search variables
+  let searchTimeout = null;
+  let searchStartTime = null;
+  
+  // Generate or retrieve device ID
+  if (!deviceId) {
+    deviceId = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    localStorage.setItem('deviceId', deviceId);
+  }
+
+  // ==================== AGE GATE ====================
+  function enterSite() {
+    const age = parseInt(document.getElementById('ageInput').value);
+    const agreed = document.getElementById('agreeCheck').checked;
+    
+    if (!age || age < 18) {
+      alert('You must be 18 or older to enter');
+      return;
+    }
+    
+    if (!agreed) {
+      alert('You must confirm that you are 18+');
+      return;
+    }
+    
+    document.getElementById('ageGate').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    
+    connectSocket();
+    
+    setTimeout(() => {
+      document.getElementById('safetyModal').style.display = 'flex';
+    }, 1000);
+  }
+
+  // ==================== SOCKET CONNECTION ====================
+  function connectSocket() {
+    socket = io({
+      auth: { deviceId },
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 10000
+    });
+
+    socket.on('connect', () => {
+      console.log('Connected to server');
+      showToast('Connected to Skideey', 'success');
+    });
+
+    socket.on('userData', (data) => {
+      userData = data;
+      document.getElementById('displayUsername').innerText = userData.username;
+      document.getElementById('headerSkiPies').innerText = userData.stats.skipies;
+      updateStats();
+    });
+
+    socket.on('onlineUsers', (count) => {
+      document.getElementById('onlineCount').innerText = count + ' online';
+    });
+
+    socket.on('publicMessage', (data) => {
+      addMessage(data, 'public');
+    });
+
+    socket.on('randomMessage', (data) => {
+      addMessage(data, 'random');
+    });
+
+    socket.on('partnerStats', (data) => {
+      const banner = document.getElementById('partnerBanner');
+      banner.innerHTML = `
+        <div class="partner-info">
+          <span class="partner-name">${data.username}</span>
+          <span class="partner-stats">❤️ ${data.stats.friends} 👎 ${data.stats.enemies}</span>
+        </div>
+      `;
+      banner.style.display = 'block';
+      setTimeout(() => banner.style.display = 'none', 5000);
+    });
+
+    socket.on('randomStart', () => {
+      // Clear search timeout
+      if (searchTimeout) {
+        clearInterval(searchTimeout);
+        searchTimeout = null;
+      }
+      
+      document.getElementById('topicSelector').style.display = 'none';
+      document.getElementById('chatContainer').style.display = 'block';
+      document.getElementById('randomMessages').innerHTML = '';
+      document.getElementById('findMatchBtn').disabled = false;
+      
+      // Remove loading if present
+      const loading = document.getElementById('matchLoading');
+      if (loading) loading.remove();
+    });
+
+    socket.on('partnerLeft', () => {
+      showToast('Partner disconnected', 'info');
+      document.getElementById('rateModal').style.display = 'flex';
+      currentPartner = null;
+      document.getElementById('chatContainer').style.display = 'none';
+      document.getElementById('topicSelector').style.display = 'block';
+    });
+
+    socket.on('statsUpdated', (stats) => {
+      if (userData) {
+        userData.stats = stats;
+        updateStats();
+      }
+    });
+
+    socket.on('reactionReceived', (data) => {
+      const anim = document.createElement('div');
+      anim.className = 'reaction-animation';
+      anim.innerText = data.emoji;
+      anim.style.left = Math.random() * window.innerWidth * 0.7 + window.innerWidth * 0.15 + 'px';
+      anim.style.top = Math.random() * window.innerHeight * 0.3 + 'px';
+      document.body.appendChild(anim);
+      setTimeout(() => anim.remove(), 1000);
+
+      const toast = document.createElement('div');
+      toast.className = `reaction-toast ${data.isSelf ? 'self' : ''}`;
+      toast.innerText = data.isSelf ? `You reacted with ${data.emoji}` : `${data.from} reacted with ${data.emoji}`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+    });
+
+    socket.on('banned', (data) => {
+      document.getElementById('banMessage').innerText = data.message || 'You have been banned';
+      if (data.expiresAt) {
+        const expiry = new Date(data.expiresAt).toLocaleString();
+        document.getElementById('banExpiry').innerHTML = `Ban expires: <strong>${expiry}</strong>`;
+      }
+      document.getElementById('banModal').style.display = 'flex';
+    });
+
+    socket.on('error', (msg) => {
+      showToast(msg, 'error');
+    });
+
+    socket.on('disconnect', () => {
+      showToast('Disconnected from server', 'error');
+    });
+
+    socket.on('usernameChanged', (newUsername) => {
+      if (userData) {
+        userData.username = newUsername;
+        document.getElementById('displayUsername').innerText = newUsername;
+        showToast('Username updated!', 'success');
+      }
+    });
+
+    socket.on('reportSubmitted', (data) => {
+      showToast(data.message, 'success');
+    });
+
+    // ==================== WAITING STATUS ====================
+    socket.on('waitingStatus', (data) => {
+      const statusEl = document.getElementById('searchStatus');
+      if (statusEl) {
+        statusEl.innerHTML = `Waiting... ${data.waitingCount} user(s) in queue (Position: ${data.position})`;
+      }
+    });
+
+    // ==================== SEARCH CANCELLED ====================
+    socket.on('searchCancelled', () => {
+      showToast('Search cancelled', 'info');
+    });
+
+    // ==================== VIDEO CALL EVENTS ====================
+    socket.on('videoStart', async (data) => {
+      console.log('Starting video call...', data);
+      
+      // Clear search timeout
+      if (searchTimeout) {
+        clearInterval(searchTimeout);
+        searchTimeout = null;
+      }
+      
+      document.getElementById('matchLoading')?.remove();
+      document.getElementById('chatContainer').style.display = 'none';
+      document.getElementById('videoContainer').style.display = 'block';
+      document.getElementById('callStatus').innerText = 'Connecting...';
+      
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ 
+          video: true, 
+          audio: true 
+        });
+        
+        document.getElementById('localVideo').srcObject = localStream;
+        document.getElementById('localVideoStatus').innerText = '(connected)';
+        
+        const configuration = { iceServers: data.iceServers?.iceServers || [
+          { urls: 'stun:stun.l.google.com:19302' }
+        ]};
+        
+        peerConnection = new RTCPeerConnection(configuration);
+        
+        localStream.getTracks().forEach(track => {
+          peerConnection.addTrack(track, localStream);
+        });
+        
+        peerConnection.ontrack = (event) => {
+          document.getElementById('remoteVideo').srcObject = event.streams[0];
+          document.getElementById('remoteVideoLabel').innerHTML = 'Partner <span style="color:#00c851;">(connected)</span>';
+          document.getElementById('callStatus').innerText = 'Connected';
+        };
+        
+        peerConnection.onicecandidate = (event) => {
+          if (event.candidate) {
+            socket.emit('webrtc-ice-candidate', {
+              candidate: event.candidate
+            });
+          }
+        };
+        
+        peerConnection.onconnectionstatechange = () => {
+          document.getElementById('callStatus').innerText = 
+            `Connection: ${peerConnection.connectionState}`;
+        };
+        
+        if (data.initiator) {
+          const offer = await peerConnection.createOffer();
+          await peerConnection.setLocalDescription(offer);
+          
+          socket.emit('webrtc-offer', {
+            offer: offer
+          });
+        }
+        
+      } catch (err) {
+        console.error('Video call error:', err);
+        alert('Could not access camera/microphone. Please check permissions.');
+        endVideoCall();
+      }
+    });
+
+    socket.on('webrtc-offer', async (data) => {
+      if (!peerConnection) return;
+      
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+      
+      socket.emit('webrtc-answer', {
+        answer: answer
+      });
+    });
+
+    socket.on('webrtc-answer', async (data) => {
+      if (!peerConnection) return;
+      
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+    });
+
+    socket.on('webrtc-ice-candidate', (data) => {
+      if (!peerConnection) return;
+      
+      peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+    });
+
+    socket.on('videoCallEnded', () => {
+      endVideoCall();
+      showToast('Partner ended the video call', 'info');
+    });
+  }
+
+  // ==================== VIDEO CALL FUNCTIONS ====================
+  function toggleAudio() {
+    if (localStream) {
+      audioEnabled = !audioEnabled;
+      localStream.getAudioTracks().forEach(track => {
+        track.enabled = audioEnabled;
+      });
+      
+      const btn = document.getElementById('toggleAudioBtn');
+      btn.style.background = audioEnabled ? '#ff7a00' : '#e63946';
+      btn.innerHTML = audioEnabled ? '🎤' : '🔇';
+    }
+  }
+
+  function toggleVideo() {
+    if (localStream) {
+      const videoEnabled = !(localStream.getVideoTracks()[0]?.enabled);
+      localStream.getVideoTracks().forEach(track => {
+        track.enabled = videoEnabled;
+      });
+      
+      const btn = document.getElementById('toggleVideoBtn');
+      btn.style.background = videoEnabled ? '#ff7a00' : '#e63946';
+      btn.innerHTML = videoEnabled ? '📹' : '🚫';
+    }
+  }
+
+  function endVideoCall() {
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+      localStream = null;
+    }
+    
+    if (peerConnection) {
+      peerConnection.close();
+      peerConnection = null;
+    }
+    
+    document.getElementById('videoContainer').style.display = 'none';
+    document.getElementById('topicSelector').style.display = 'block';
+    
+    socket.emit('endVideoCall');
+    
+    document.getElementById('localVideo').srcObject = null;
+    document.getElementById('remoteVideo').srcObject = null;
+    document.getElementById('remoteVideoLabel').innerHTML = 'Partner (waiting...)';
+    document.getElementById('localVideoStatus').innerText = '(connecting...)';
+    document.getElementById('callStatus').innerText = 'Call ended';
+  }
+
+  // ==================== MESSAGE FUNCTIONS ====================
+  function addMessage(data, type) {
+    const container = document.getElementById(type === 'public' ? 'publicMessages' : 'randomMessages');
+    const msgDiv = document.createElement('div');
+    const isOwn = data.senderUuid === socket.id;
+    
+    msgDiv.className = `message ${isOwn ? 'own' : 'other'}`;
+    msgDiv.dataset.senderId = data.senderUuid;
+    
+    const time = new Date(data.timestamp || Date.now()).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    
+    msgDiv.innerHTML = `
+      <div class="message-header">
+        <span class="message-sender">${data.name}</span>
+        <span class="message-time">${time}</span>
+      </div>
+      <div class="message-content">${data.message}</div>
+      <div class="message-footer">
+        <button class="reaction-btn" onclick="showEmojiPicker('${data.senderUuid}', this)">😊</button>
+      </div>
+    `;
+    
+    container.appendChild(msgDiv);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function sendPublic() {
+    const input = document.getElementById('publicInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+    
+    socket.emit('publicMessage', {
+      name: userData?.username || 'Anonymous',
+      message: msg,
+      senderUuid: socket.id
+    });
+    
+    input.value = '';
+  }
+
+  function sendRandom() {
+    const input = document.getElementById('randomInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+    
+    socket.emit('randomMessage', {
+      name: userData?.username || 'Anonymous',
+      message: msg,
+      senderUuid: socket.id
+    });
+    
+    input.value = '';
+  }
+
+  // ==================== REACTION FUNCTIONS ====================
+  function showEmojiPicker(targetUuid, btn) {
+    const existing = document.querySelector('.emoji-picker');
+    if (existing) existing.remove();
+
+    const picker = document.createElement('div');
+    picker.className = 'emoji-picker';
+    
+    const emojis = ['👍', '❤️', '🔥', '😂', '👏', '👎', '😡', '💀'];
+    
+    emojis.forEach(emoji => {
+      const emojiBtn = document.createElement('button');
+      emojiBtn.className = 'emoji-option';
+      emojiBtn.innerText = emoji;
+      emojiBtn.onclick = (e) => {
+        e.stopPropagation();
+        socket.emit('sendReaction', { targetUuid, emoji });
+        picker.remove();
+      };
+      picker.appendChild(emojiBtn);
+    });
+    
+    const rect = btn.getBoundingClientRect();
+    picker.style.top = rect.top - 60 + 'px';
+    picker.style.left = rect.left + 'px';
+    
+    document.body.appendChild(picker);
+    
+    setTimeout(() => {
+      document.addEventListener('click', function closePicker(e) {
+        if (!picker.contains(e.target)) {
+          picker.remove();
+          document.removeEventListener('click', closePicker);
+        }
+      });
+    }, 100);
+  }
+
+  function sendReaction(emoji) {
+    if (currentPartner) {
+      socket.emit('sendReaction', { targetUuid: 'lastPartner', emoji });
+    }
+    closeModal('rateModal');
+  }
+
+  // ==================== VIDEO TOGGLE ====================
+  document.getElementById('videoToggle')?.addEventListener('change', (e) => {
+    videoEnabled = e.target.checked;
+    console.log(`Video call mode: ${videoEnabled ? 'ON' : 'OFF'}`);
+  });
+
+  // ==================== RANDOM CHAT FUNCTIONS ====================
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.topic-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const topic = btn.dataset.topic;
+        
+        if (btn.classList.contains('active')) {
+          btn.classList.remove('active');
+          selectedTopics = selectedTopics.filter(t => t !== topic);
+        } else if (selectedTopics.length < 3) {
+          btn.classList.add('active');
+          selectedTopics.push(topic);
+        }
+      });
+    });
+  });
+
+  function findMatch() {
+    if (selectedTopics.length === 0) {
+      if (!confirm('No topics selected. Find random match anyway?')) return;
+    }
+    
+    const findBtn = document.getElementById('findMatchBtn');
+    findBtn.disabled = true;
+    findBtn.innerText = 'Searching...';
+    
+    searchStartTime = Date.now();
+    
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'loading-container';
+    loadingDiv.id = 'matchLoading';
+    loadingDiv.innerHTML = `
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Finding your ${videoEnabled ? 'video' : 'text'} match...</div>
+      <div class="loading-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <div style="margin-top: 20px; width: 100%; display: flex; gap: 10px; justify-content: center;">
+        <button id="cancelSearchBtn" class="cancel-btn" onclick="cancelSearch()">
+          ❌ Cancel Search
         </button>
       </div>
-
-      <div id="chatContent" style="display:none;">
-        <div id="partnerBanner"></div>
-        <div id="randomMessages" class="messages"></div>
-        <div id="typing" style="color:#aaa; min-height:24px;"></div>
-        <input id="randomInput" oninput="typing()" placeholder="Type a message..." />
-        <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
-          <button onclick="sendRandom()">Send</button>
-          <button onclick="sendGIF('random')">GIF</button>
-          <button onclick="skipRandom()">Skip</button>
-          <button class="report" onclick="reportUser()">Report</button>
-        </div>
+      <div id="searchStatus" style="margin-top: 10px; color: #ffaa40; font-size: 0.9rem;">
+        Looking for users...
       </div>
-    </section>
-
-    <section id="statsTab" style="display:none;">
-      <div class="stats-card">
-        <h2>Your SkiPies</h2>
-        <div class="skipies-progress">
-          <div class="skipies-bar" id="progressBar"></div>
-        </div>
-        <div class="skipies-big" id="bigSkiPies">50</div>
-        <div id="achievementTitle" style="font-size:1.35em; margin:12px 0; color:#ffaa40; font-weight:600;">
-          Newbie Connector
-        </div>
-
-        <div style="display:flex; justify-content:space-around; margin:25px 0; font-size:1.1em; flex-wrap:wrap; gap:20px;">
-          <div>❤️ Friends<br><span id="statsFriends" style="font-size:2.2em; color:#ff6b6b;">0</span></div>
-          <div>👎 Enemies<br><span id="statsEnemies" style="font-size:2.2em; color:#a0a0ff;">0</span></div>
-        </div>
-
-        <h3 style="margin:20px 0 10px; color:#ccc; text-align:center;">Achievements</h3>
-        <div id="badges" style="display:flex; gap:18px; justify-content:center; flex-wrap:wrap; min-height:60px;"></div>
-      </div>
-    </section>
-  `;
-
-  showTab("public");
-  socket.emit("register", myUuid);
-  updateStatsDisplay();
-
-  // Topic selection
-  document.querySelectorAll('.topic-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const topic = btn.dataset.topic;
-      if (selectedTopics.includes(topic)) {
-        selectedTopics = selectedTopics.filter(t => t !== topic);
-        btn.classList.remove('active');
-      } else if (selectedTopics.length < 3) {
-        selectedTopics.push(topic);
-        btn.classList.add('active');
+    `;
+    
+    document.getElementById('topicSelector').style.display = 'none';
+    document.getElementById('topicSelector').parentNode.insertBefore(loadingDiv, document.getElementById('topicSelector').nextSibling);
+    
+    socket.emit('joinRandom', { 
+      topics: selectedTopics,
+      videoEnabled: videoEnabled 
+    });
+    
+    // Update status messages over time
+    let statusIndex = 0;
+    const statusMessages = [
+      'Still looking...',
+      'This might take a moment',
+      'No matches yet',
+      'Try selecting more topics',
+      'You can cancel and try again'
+    ];
+    
+    searchTimeout = setInterval(() => {
+      const stillLoading = document.getElementById('matchLoading');
+      if (!stillLoading) {
+        clearInterval(searchTimeout);
+        return;
       }
-      document.getElementById("selectedTopicsCount").innerText = selectedTopics.length;
-    });
-  });
+      
+      const elapsed = Math.floor((Date.now() - searchStartTime) / 1000);
+      const statusEl = document.getElementById('searchStatus');
+      const loadingText = stillLoading.querySelector('.loading-text');
+      
+      if (elapsed < 10) {
+        // First 10 seconds - normal
+        if (loadingText) {
+          loadingText.innerHTML = `Finding your ${videoEnabled ? 'video' : 'text'} match...`;
+        }
+      } else if (elapsed < 30) {
+        // 10-30 seconds - still looking
+        if (loadingText) {
+          loadingText.innerHTML = `Still searching (${elapsed}s)...`;
+        }
+        if (statusEl) {
+          statusEl.innerHTML = statusMessages[Math.min(1, statusIndex++)];
+        }
+      } else {
+        // 30+ seconds - suggest cancel
+        if (loadingText) {
+          loadingText.innerHTML = `Taking longer than expected (${elapsed}s)`;
+        }
+        if (statusEl) {
+          statusEl.innerHTML = 'No users available. Try canceling and searching again.';
+        }
+      }
+    }, 5000);
+  }
 
-  document.getElementById("startWithTopics").addEventListener('click', () => {
-    socket.emit("joinRandom", { topics: selectedTopics });
-    document.getElementById("topicSelector").style.display = "none";
-    document.getElementById("chatContent").style.display = "block";
-  });
-
-  // Safety modal
-  setTimeout(() => {
-    document.getElementById("safetyModal").style.display = "flex";
-  }, 600);
-}
-
-function showTab(tab) {
-  document.querySelectorAll("section").forEach(el => el.style.display = "none");
-  document.getElementById(tab + "Tab").style.display = "block";
-}
-
-function getName() {
-  return document.getElementById("username")?.value?.trim() || "Anonymous";
-}
-
-function updateStatsDisplay() {
-  const pct = Math.round(myStats.skipies);
-  document.getElementById("headerSkiPies").innerText = pct;
-  document.getElementById("bigSkiPies").innerText = pct;
-  document.getElementById("progressBar").style.width = pct + "%";
-
-  document.getElementById("statsFriends").innerText = myStats.friends;
-  document.getElementById("statsEnemies").innerText = myStats.enemies;
-
-  let title = "Newbie Connector";
-  if (pct >= 75) title = "Legend in the Making… So Close!";
-  else if (pct >= 70) title = "Epic Climb – Almost Legendary!";
-  else if (pct >= 65) title = "Rising Star – Keep Pushing!";
-  else if (pct >= 55) title = "Solid Vibes";
-  else if (myStats.friends > myStats.enemies * 2.5) title = "Loved by the Crowd ❤️";
-  else if (myStats.enemies > 10) title = "Polarizing Force 💀";
-
-  document.getElementById("achievementTitle").innerText = title;
-
-  let badges = [];
-  if (pct >= 70) badges.push({emoji:"🏆", title:"High Flyer – 70%+"});
-  if (myStats.friends >= 15) badges.push({emoji:"❤️‍🔥", title:"Crowd Favorite"});
-  if (myStats.enemies <= 4 && pct >= 60) badges.push({emoji:"🌟", title:"Almost Untouchable"});
-  if (myStats.friends >= 8 && myStats.enemies >= 8) badges.push({emoji:"⚖️", title:"Balanced Chaos"});
-
-  document.getElementById("badges").innerHTML = badges.length
-    ? badges.map(b => `<span style="font-size:38px; cursor:help;" title="${b.title}">${b.emoji}</span>`).join("")
-    : '<span style="color:#777; font-style:italic;">Keep chatting to unlock badges</span>';
-}
-
-// ─── Public Chat ─────────────────────────────────────────────────
-function sendPublic() {
-  const msg = document.getElementById("publicInput")?.value?.trim();
-  if (!msg) return;
-  socket.emit("publicMessage", { name: getName(), message: msg, senderUuid: myUuid });
-  document.getElementById("publicInput").value = "";
-}
-
-socket.on("publicMessage", data => {
-  const box = document.getElementById("publicMessages");
-  const p = document.createElement("p");
-  p.innerHTML = `<b>${data.name}</b>: ${data.message}`;
-  p.dataset.senderUuid = data.senderUuid || "";
-  addReactionTrigger(p);
-  box.appendChild(p);
-  box.scrollTop = box.scrollHeight;
-  setTimeout(() => p.remove(), 30000);
-});
-
-// ─── Random Chat ─────────────────────────────────────────────────
-function sendRandom() {
-  const msg = document.getElementById("randomInput")?.value?.trim();
-  if (!msg) return;
-  socket.emit("randomMessage", { name: getName(), message: msg, senderUuid: myUuid });
-  document.getElementById("randomInput").value = "";
-}
-
-socket.on("randomMessage", data => {
-  const box = document.getElementById("randomMessages");
-  const p = document.createElement("p");
-  p.innerHTML = `<b>${data.name}</b>: ${data.message}`;
-  p.dataset.senderUuid = data.senderUuid || "";
-  addReactionTrigger(p);
-  box.appendChild(p);
-  box.scrollTop = box.scrollHeight;
-  setTimeout(() => p.remove(), 30000);
-});
-
-// ─── Reaction Icon + Popup ───────────────────────────────────────
-function addReactionTrigger(p) {
-  const trigger = document.createElement("span");
-  trigger.innerHTML = "😊";
-  trigger.className = "reaction-trigger";
-  trigger.title = "React";
-
-  trigger.addEventListener("click", (e) => {
-    e.stopPropagation();
-    showReactionPopup(p.dataset.senderUuid, p);
-  });
-
-  p.appendChild(trigger);
-}
-
-let currentPopup = null;
-
-function showReactionPopup(targetUuid, messageElement) {
-  if (currentPopup) currentPopup.remove();
-
-  const popup = document.createElement("div");
-  popup.className = "emoji-popup";
-
-  const rect = messageElement.getBoundingClientRect();
-  popup.style.top = (rect.bottom + window.scrollY + 8) + "px";
-  popup.style.left = (rect.left + window.scrollX) + "px";
-
-  Object.keys(reactionConfig).forEach(emoji => {
-    const btn = document.createElement("button");
-    btn.innerHTML = emoji;
-    btn.style.fontSize = "28px";
-    btn.style.background = "none";
-    btn.style.border = "none";
-    btn.style.cursor = "pointer";
-    btn.addEventListener("click", () => {
-      socket.emit("sendReaction", { targetUuid, emoji });
-      popup.remove();
-      currentPopup = null;
-    });
-    popup.appendChild(btn);
-  });
-
-  document.body.appendChild(popup);
-  currentPopup = popup;
-
-  const closeOnClick = (e) => {
-    if (!popup.contains(e.target)) {
-      popup.remove();
-      currentPopup = null;
-      document.removeEventListener("click", closeOnClick);
+  function cancelSearch() {
+    // Clear the timeout
+    if (searchTimeout) {
+      clearInterval(searchTimeout);
+      searchTimeout = null;
     }
-  };
-  setTimeout(() => document.addEventListener("click", closeOnClick), 10);
-}
+    
+    // Remove loading animation
+    const loading = document.getElementById('matchLoading');
+    if (loading) loading.remove();
+    
+    // Show topic selector again
+    document.getElementById('topicSelector').style.display = 'block';
+    
+    // Re-enable find button
+    const findBtn = document.getElementById('findMatchBtn');
+    findBtn.disabled = false;
+    findBtn.innerText = '🔍 Find Random Match';
+    
+    // Notify server to remove from waiting queue
+    socket.emit('cancelSearch');
+    
+    showToast('Search cancelled', 'info');
+  }
 
-// ─── Other functions ─────────────────────────────────────────────
-function skipRandom() {
-  socket.emit("skipRandom");
-  document.getElementById("randomMessages").innerHTML = "";
-}
+  function skipRandom() {
+    // Clear any pending search
+    if (searchTimeout) {
+      clearInterval(searchTimeout);
+      searchTimeout = null;
+    }
+    
+    // Remove loading animation
+    const loading = document.getElementById('matchLoading');
+    if (loading) loading.remove();
+    
+    if (document.getElementById('videoContainer').style.display === 'block') {
+      endVideoCall();
+    }
+    
+    socket.emit('skipRandom');
+    document.getElementById('randomMessages').innerHTML = '';
+    document.getElementById('chatContainer').style.display = 'none';
+    document.getElementById('topicSelector').style.display = 'block';
+    document.getElementById('findMatchBtn').disabled = false;
+    document.getElementById('findMatchBtn').innerText = '🔍 Find Random Match';
+  }
 
-socket.on("partnerLeft", () => {
-  document.getElementById("randomMessages").innerHTML = "";
-  document.getElementById("finalRateModal").style.display = "flex";
-  const grid = document.getElementById("finalEmojiGrid");
-  grid.innerHTML = Object.keys(reactionConfig).map(e =>
-    `<button onclick="socket.emit('sendReaction',{targetUuid:'lastPartner',emoji:'${e}'});document.getElementById('finalRateModal').style.display='none'">${e}</button>`
-  ).join("");
-});
+  function reportUser() {
+    if (confirm('Report this user for inappropriate behavior?')) {
+      socket.emit('report', { reason: 'User reported' });
+    }
+  }
 
-function typing() { socket.emit("typing", "random"); }
+  // ==================== GIF FUNCTIONS ====================
+  function openGifPicker(type) {
+    const url = prompt('Enter GIF or image URL:');
+    if (url && url.startsWith('http')) {
+      socket.emit(type === 'public' ? 'publicGif' : 'randomGif', { url });
+    } else if (url) {
+      alert('URL must start with http:// or https://');
+    }
+  }
 
-socket.on("typing", () => {
-  document.getElementById("typing").innerText = "User typing...";
-  setTimeout(() => document.getElementById("typing").innerText = "", 1800);
-});
+  // ==================== USERNAME CHANGE ====================
+  function changeUsername() {
+    const newName = prompt('Enter new username (3-20 characters):', userData?.username);
+    if (newName && newName.length >= 3 && newName.length <= 20) {
+      socket.emit('changeUsername', newName);
+    } else if (newName) {
+      alert('Username must be 3-20 characters');
+    }
+  }
 
-function reportUser() {
-  socket.emit("report", {});
-  alert("Report sent — thank you.");
-}
+  // ==================== TAB SWITCHING ====================
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(tab + 'Tab').classList.add('active');
+    event.target.classList.add('active');
+  }
 
-function sendGIF(type) {
-  const url = prompt("Paste GIF / image URL");
-  if (!url || !url.startsWith("http")) return;
-  socket.emit(type === "public" ? "publicGif" : "randomGif", { url, name: getName() });
-}
+  // ==================== STATS FUNCTIONS ====================
+  function updateStats() {
+    if (!userData) return;
+    
+    const pct = Math.round(userData.stats.skipies);
+    document.getElementById('headerSkiPies').innerText = pct;
+    document.getElementById('bigSkiPies').innerText = pct;
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('statsFriends').innerText = userData.stats.friends;
+    document.getElementById('statsEnemies').innerText = userData.stats.enemies;
+    
+    let title = 'Newbie Connector';
+    if (pct >= 75) title = 'Legend in the Making';
+    else if (pct >= 70) title = 'Epic Climb';
+    else if (pct >= 65) title = 'Rising Star';
+    else if (pct >= 55) title = 'Solid Vibes';
+    else if (userData.stats.friends > userData.stats.enemies * 2.5) title = 'Loved by the Crowd ❤️';
+    else if (userData.stats.enemies > 10) title = 'Polarizing Force 💀';
+    
+    document.getElementById('achievementTitle').innerText = title;
+    
+    updateBadges();
+  }
 
-socket.on("onlineUsers", count => document.getElementById("onlineCount").innerText = count);
+  function updateBadges() {
+    const badges = [];
+    const pct = userData.stats.skipies;
+    
+    if (pct >= 70) badges.push({ emoji: '🏆', title: 'High Flyer' });
+    if (userData.stats.friends >= 15) badges.push({ emoji: '❤️‍🔥', title: 'Crowd Favorite' });
+    if (userData.stats.enemies <= 4 && pct >= 60) badges.push({ emoji: '🌟', title: 'Almost Untouchable' });
+    if (userData.stats.friends >= 8 && userData.stats.enemies >= 8) badges.push({ emoji: '⚖️', title: 'Balanced Chaos' });
+    
+    const container = document.getElementById('badges');
+    container.innerHTML = badges.length
+      ? badges.map(b => `<span class="badge" title="${b.title}">${b.emoji}</span>`).join('')
+      : '<span class="no-badges">Keep chatting to unlock badges</span>';
+  }
 
-socket.on("statsUpdated", stats => {
-  myStats = stats;
-  updateStatsDisplay();
-});
+  // ==================== UTILITY FUNCTIONS ====================
+  function showToast(msg, type) {
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    toast.innerText = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
 
-socket.on("partnerStats", stats => {
-  const banner = document.getElementById("partnerBanner");
-  banner.innerHTML = `Partner → SkiPies <b>${Math.round(stats.skipies)}%</b> ❤️${stats.friends} 👎${stats.enemies}`;
-  banner.style.display = "block";
-  setTimeout(() => banner.style.display = "none", 8000);
-});
+  function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+  }
 </script>
 </body>
 </html>

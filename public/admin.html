@@ -1,141 +1,368 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Skideey Admin Panel</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skideey • Admin Panel</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: #0a0a0a;
       color: #e0e0e0;
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       min-height: 100vh;
-      padding: 16px;
-      line-height: 1.5;
+      padding: 20px;
     }
+
     h1 {
       color: #ff7a00;
-      font-size: clamp(1.8rem, 6vw, 2.6rem);
-      text-align: center;
-      margin: 20px 0 30px;
+      font-size: 2.5rem;
     }
+
+    h2 {
+      color: #ffaa40;
+      margin-bottom: 20px;
+    }
+
     .login-container {
       max-width: 400px;
-      margin: 80px auto 0;
+      margin: 100px auto;
       background: #1a1a1a;
-      padding: 40px 24px;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
-      text-align: center;
+      padding: 40px;
+      border-radius: 24px;
+      border: 1px solid #333;
     }
+
     .login-container input {
       width: 100%;
-      padding: 14px;
+      padding: 16px;
       margin: 12px 0;
-      border-radius: 10px;
-      background: #111;
-      border: 1px solid #333;
+      background: #222;
+      border: 2px solid #333;
+      border-radius: 12px;
       color: white;
-      font-size: 1.1rem;
+      font-size: 1rem;
     }
+
+    .login-container input:focus {
+      outline: none;
+      border-color: #ff7a00;
+    }
+
     .login-container button {
       width: 100%;
-      padding: 14px;
+      padding: 16px;
       background: #ff7a00;
-      color: black;
-      font-weight: 700;
+      color: white;
       border: none;
-      border-radius: 10px;
-      font-size: 1.1rem;
+      border-radius: 12px;
+      font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
+      font-size: 1rem;
     }
-    .login-container button:hover { background: #ffaa40; }
 
-    #adminPanel { display: none; }
+    .login-container button:hover {
+      background: #ff9429;
+    }
+
+    #adminPanel {
+      display: none;
+    }
+
     .dashboard-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 30px;
       flex-wrap: wrap;
-      gap: 16px;
-      margin-bottom: 24px;
+      gap: 20px;
     }
+
     .live-count {
-      color: #0f0;
-      font-weight: bold;
-      font-size: 1.4em;
+      background: #00c851;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-weight: 600;
     }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
     .card {
       background: #1a1a1a;
       border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 24px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+      padding: 24px;
+      border: 1px solid #333;
     }
-    .card h2 {
-      color: #ffaa40;
-      margin-bottom: 16px;
-      font-size: 1.4rem;
-    }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 12px;
     }
-    th, td {
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid #333;
-    }
+
     th {
+      text-align: left;
+      padding: 12px;
       background: #222;
       color: #ffaa40;
       font-weight: 600;
     }
-    tr:hover { background: #222; }
+
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #333;
+    }
+
+    tr:hover {
+      background: #222;
+    }
+
+    .reports-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .report-item {
+      background: #222;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      border-left: 4px solid #ffbb33;
+    }
+
+    .ban-controls {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .ban-controls input {
+      flex: 2;
+      padding: 12px;
+      background: #222;
+      border: 2px solid #333;
+      border-radius: 8px;
+      color: white;
+      min-width: 200px;
+    }
+
+    .ban-controls input:focus {
+      outline: none;
+      border-color: #ff7a00;
+    }
+
+    .ban-controls select {
+      flex: 1;
+      padding: 12px;
+      background: #222;
+      color: white;
+      border: 2px solid #333;
+      border-radius: 8px;
+      min-width: 120px;
+    }
+
+    .ban-btn {
+      background: #e63946;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .ban-btn:hover {
+      background: #ff4d5e;
+    }
+
     #logoutBtn {
       background: #e63946;
       color: white;
-      padding: 12px 32px;
-      border-radius: 12px;
       border: none;
-      font-size: 1.1rem;
+      padding: 14px 40px;
+      border-radius: 30px;
+      font-weight: 600;
       cursor: pointer;
-      margin-top: 20px;
+      margin-top: 30px;
       display: block;
       margin-left: auto;
       margin-right: auto;
     }
-    #logoutBtn:hover { background: #f48c96; }
 
-    @media (max-width: 600px) {
-      .dashboard-header { flex-direction: column; text-align: center; }
-      .card { padding: 16px; }
-      table, th, td { font-size: 0.95rem; }
-      .emoji-cell { font-size: 1.8rem; }
+    #logoutBtn:hover {
+      background: #ff4d5e;
+    }
+
+    .emoji-cell {
+      font-size: 2rem;
+    }
+
+    .metric-highlight {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #ff7a00;
+      text-align: center;
+    }
+
+    .metric-label {
+      color: #aaa;
+      font-size: 0.9rem;
+      text-align: center;
+      margin-top: 5px;
+    }
+
+    .metric-card {
+      background: #222;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .token-display {
+      background: #222;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      word-break: break-all;
+      font-family: monospace;
+      border: 1px solid #333;
+    }
+
+    .copy-btn {
+      background: #333;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .copy-btn:hover {
+      background: #444;
+    }
+
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .ban-controls {
+        flex-direction: column;
+      }
+      
+      .ban-controls input,
+      .ban-controls select {
+        width: 100%;
+      }
     }
   </style>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
 
 <div class="login-container" id="loginScreen">
-  <h1>Skideey Admin Panel</h1>
-  <input id="passInput" type="password" placeholder="Enter password" autocomplete="off" />
-  <button onclick="tryLogin()">Login</button>
+  <h1>Skideey Admin</h1>
+  <input type="password" id="adminPassword" placeholder="Enter admin password">
+  <button onclick="adminLogin()">Login</button>
 </div>
 
 <div id="adminPanel">
   <div class="dashboard-header">
-    <h1>Skideey Live Dashboard</h1>
-    <span class="live-count">Online: <span id="onlineTotal">0</span></span>
+    <h1>⚡ Live Dashboard</h1>
+    <span class="live-count">🟢 <span id="onlineCount">0</span> Online</span>
+  </div>
+
+  <div class="stats-grid">
+    <div class="card">
+      <h2>📊 Key Metrics</h2>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="metric-card">
+          <div class="metric-highlight" id="avgSkipies">-</div>
+          <div class="metric-label">Avg SkiPies</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-highlight" id="maxSkipies">-</div>
+          <div class="metric-label">Max SkiPies</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-highlight" id="highSkipies">-</div>
+          <div class="metric-label">≥70% Users</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-highlight" id="activeRooms">-</div>
+          <div class="metric-label">Active Rooms</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-highlight" id="videoCalls">-</div>
+          <div class="metric-label">Video Calls</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-highlight" id="waitingCount">-</div>
+          <div class="metric-label">Waiting</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🛡️ Quick Ban</h2>
+      <div class="ban-controls">
+        <input type="text" id="banTarget" placeholder="User ID or IP">
+        <select id="banDuration">
+          <option value="3600000">1 Hour</option>
+          <option value="86400000">24 Hours</option>
+          <option value="259200000" selected>3 Days</option>
+          <option value="604800000">7 Days</option>
+          <option value="2592000000">30 Days</option>
+          <option value="permanent">Permanent</option>
+        </select>
+      </div>
+      <input type="text" id="banReason" placeholder="Ban reason" style="width:100%; padding:12px; margin:10px 0; background:#222; border:2px solid #333; border-radius:8px; color:white;">
+      <button class="ban-btn" onclick="applyBan()">Apply Ban</button>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="card">
+      <h2>🌍 Countries</h2>
+      <table id="countryTable">
+        <thead>
+          <tr><th>Country</th><th>Users</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>📈 System Stats</h2>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="metric-card">
+          <div class="metric-highlight" id="totalUsers">-</div>
+          <div class="metric-label">Total Users</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-highlight" id="queueSize">-</div>
+          <div class="metric-label">Queue Size</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="card">
-    <h2>Most Used Emojis</h2>
+    <h2>🔥 Top Emojis</h2>
     <table id="emojiTable">
       <thead>
         <tr><th>Emoji</th><th>Count</th></tr>
@@ -145,88 +372,85 @@
   </div>
 
   <div class="card">
-    <h2>Country Distribution</h2>
-    <table id="countryTable">
-      <thead>
-        <tr><th>Country</th><th>Users</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <div class="card">
-    <h2>SkiPies Overview</h2>
-    <p>Average SkiPies: <strong id="avgSkipies">—</strong>%</p>
-    <p>Highest SkiPies: <strong id="maxSkipies">—</strong>%</p>
-    <p>Users ≥ 70%: <strong id="highSkipies">—</strong></p>
+    <h2>⚠️ Recent Reports</h2>
+    <div id="reportsList" class="reports-list"></div>
   </div>
 
   <button id="logoutBtn" onclick="logout()">Logout</button>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
 <script>
   const socket = io();
   let isAdmin = false;
 
-  function tryLogin() {
-    const pass = document.getElementById("passInput").value.trim();
-    if (!pass) return alert("Please enter the password");
-    socket.emit("adminLogin", pass);
+  function adminLogin() {
+    const password = document.getElementById('adminPassword').value;
+    socket.emit('adminLogin', password);
   }
 
-  socket.on("adminLoginSuccess", () => {
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("adminPanel").style.display = "block";
+  socket.on('adminLoginSuccess', () => {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'block';
     isAdmin = true;
-    socket.emit("requestAdminStats");
+    fetchReports();
   });
 
-  socket.on("adminStats", (data) => {
-    // Online count
-    document.getElementById("onlineTotal").innerText = data.online || 0;
+  socket.on('adminStats', (data) => {
+    document.getElementById('onlineCount').innerText = data.online || 0;
+    document.getElementById('avgSkipies').innerText = data.avgSkipies || '-';
+    document.getElementById('maxSkipies').innerText = data.maxSkipies || '-';
+    document.getElementById('highSkipies').innerText = data.above70 || 0;
+    document.getElementById('activeRooms').innerText = data.activeRooms || 0;
+    document.getElementById('videoCalls').innerText = data.videoCalls || 0;
+    document.getElementById('waitingCount').innerText = data.waitingCount || 0;
+    document.getElementById('totalUsers').innerText = data.totalUsers || 0;
+    document.getElementById('queueSize').innerText = data.queueSize || 0;
 
     // Emojis table
-    let emojiHtml = "";
-    if (data.emojis && Object.keys(data.emojis).length > 0) {
+    let emojiHtml = '';
+    if (data.emojis) {
       Object.entries(data.emojis)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 12)
         .forEach(([emoji, count]) => {
-          emojiHtml += `<tr><td class="emoji-cell" style="font-size:2rem;">${emoji}</td><td>${count}</td></tr>`;
+          emojiHtml += `<tr><td class="emoji-cell">${emoji}</td><td>${count}</td></tr>`;
         });
-    } else {
-      emojiHtml = '<tr><td colspan="2" style="text-align:center; color:#777;">No emoji data yet</td></tr>';
     }
-    document.getElementById("emojiTable").querySelector("tbody").innerHTML = emojiHtml;
+    document.getElementById('emojiTable').querySelector('tbody').innerHTML = emojiHtml || '<tr><td colspan="2" style="text-align:center; color:#777;">No data</td></tr>';
 
     // Countries table
-    let countryHtml = "";
-    if (data.countries && Object.keys(data.countries).length > 0) {
+    let countryHtml = '';
+    if (data.countries) {
       Object.entries(data.countries)
         .sort((a, b) => b[1] - a[1])
         .forEach(([country, count]) => {
           countryHtml += `<tr><td>${country}</td><td>${count}</td></tr>`;
         });
-    } else {
-      countryHtml = '<tr><td colspan="2" style="text-align:center; color:#777;">No country data yet</td></tr>';
     }
-    document.getElementById("countryTable").querySelector("tbody").innerHTML = countryHtml;
-
-    // SkiPies stats
-    document.getElementById("avgSkipies").innerText = data.avgSkipies ?? "—";
-    document.getElementById("maxSkipies").innerText = data.maxSkipies ?? "—";
-    document.getElementById("highSkipies").innerText = data.above70 ?? "—";
+    document.getElementById('countryTable').querySelector('tbody').innerHTML = countryHtml || '<tr><td colspan="2" style="text-align:center; color:#777;">No data</td></tr>';
   });
+
+  socket.on('userReported', (data) => {
+    console.log('User reported:', data);
+    fetchReports();
+  });
+
+  async function fetchReports() {
+    // This would need an API endpoint
+  }
+
+  function applyBan() {
+    alert('Ban functionality would require API endpoint');
+  }
 
   function logout() {
     socket.disconnect();
     location.reload();
   }
 
-  // Auto-refresh stats every 5 seconds when logged in
   setInterval(() => {
-    if (isAdmin) socket.emit("requestAdminStats");
+    if (isAdmin) {
+      socket.emit('requestAdminStats');
+    }
   }, 5000);
 </script>
 </body>

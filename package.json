@@ -1,17 +1,21 @@
 {
   "name": "skideey",
-  "version": "1.0.0",
-  "description": "Anonymous random chat app",
+  "version": "4.1.0",
+  "description": "Gamified anonymous chat with video calls and search cancel",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.7.5",
-    "node-fetch": "^2.6.7"
+    "compression": "^1.8.1",
+    "express": "^4.22.1",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
   },
   "engines": {
-    "node": "18.x || 20.x"
+    "node": ">=18.0.0"
   }
 }

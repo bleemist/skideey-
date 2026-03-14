@@ -1,29 +1,90 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const fetch = require("node-fetch").default;
+const fs = require('fs').promises;
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  },
+  transports: ['websocket', 'polling'],
+  pingTimeout: 60000,
+  pingInterval: 25000
+});
 
 app.use(express.static("public"));
 
 const ADMIN_PASSWORD = "Muyanja@6872@";
 
-// In-memory stores (lost on server restart – fine for MVP)
-const uuidToSocket = new Map();
-let waitingUser = null;
+// ==================== FILE-BASED PERSISTENCE ====================
+const DATA_FILE = path.join(__dirname, 'data', 'users.json');
 
-// Monitoring globals
+// Ensure data directory exists
+async function ensureDataDir() {
+  const dataDir = path.join(__dirname, 'data');
+  try {
+    await fs.access(dataDir);
+  } catch {
+    await fs.mkdir(dataDir, { recursive: true });
+  }
+}
+ensureDataDir();
+
+// Load users from file
+async function loadUsers() {
+  try {
+    const data = await fs.readFile(DATA_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (err) {
+    return {};
+  }
+}
+
+// Save users to file
+async function saveUsers(users) {
+  try {
+    await fs.writeFile(DATA_FILE, JSON.stringify(users, null, 2));
+    console.log('💾 Users saved to disk');
+  } catch (err) {
+    console.error('❌ Failed to save users:', err.message);
+  }
+}
+
+// ==================== DATA STRUCTURES ====================
+let userSessions = {};
+let users = new Map();
+let waitingUsers = new Set();
+let videoCallUsers = new Map();
+const messageQueue = [];
+let onlineCount = 0;
+
+// Monitoring
 let emojiCount = {};
 let countryCount = {};
-let skipiesValues = [];
 
-// Topic queues
-const topicQueues = new Map();           // topic → Set<socket.id>
-const noTopicWaiting = [];               // array of socket.ids with no topics
+// Load saved data on startup
+(async () => {
+  userSessions = await loadUsers();
+  console.log(`📂 Loaded ${Object.keys(userSessions).length} saved users`);
+})();
 
+// Auto-save every 5 minutes
+setInterval(async () => {
+  await saveUsers(userSessions);
+}, 300000);
+
+// Save on shutdown
+process.on('SIGINT', async () => {
+  console.log('\n💾 Saving users before shutdown...');
+  await saveUsers(userSessions);
+  process.exit(0);
+});
+
+// ==================== REACTION CONFIG ====================
 const reactionConfig = {
   "👍": { delta: 6, friends: 1 },
   "❤️": { delta: 9, friends: 1 },
@@ -35,32 +96,118 @@ const reactionConfig = {
   "💀": { delta: -8, enemies: 1 }
 };
 
-io.on("connection", async (socket) => {
-  const ip = socket.handshake.headers["x-forwarded-for"]?.split(",")[0]?.trim() || socket.handshake.address;
+// ==================== ICE SERVERS FOR WEBRTC ====================
+const iceServers = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' }
+  ]
+};
 
-  // Fetch country server-side
+// ==================== FAST MESSAGE PROCESSOR ====================
+setInterval(() => {
+  if (messageQueue.length === 0) return;
+  
+  const batch = messageQueue.splice(0, 100);
+  
+  for (const msg of batch) {
+    const targetSocket = io.sockets.sockets.get(msg.to);
+    if (targetSocket) {
+      targetSocket.emit('randomMessage', {
+        name: msg.senderName,
+        message: msg.content,
+        senderUuid: msg.from,
+        timestamp: msg.timestamp
+      });
+    }
+  }
+}, 10);
+
+// ==================== CLEANUP OLD DATA ====================
+setInterval(() => {
+  if (Object.keys(emojiCount).length > 100) {
+    emojiCount = {};
+  }
+}, 3600000);
+
+// ==================== SOCKET CONNECTION ====================
+io.on("connection", async (socket) => {
+  const startTime = Date.now();
+  const ip = socket.handshake.headers["x-forwarded-for"]?.split(",")[0]?.trim() || socket.handshake.address;
+  const deviceId = socket.handshake.auth?.deviceId || socket.handshake.headers['x-device-id'];
+  
+  console.log(`🔌 New connection: ${socket.id} (${ip})`);
+
+  // ==================== GET OR CREATE USER ====================
+  let user;
+  let username;
+  let isNewUser = false;
+  
+  if (deviceId && userSessions[deviceId]) {
+    user = { ...userSessions[deviceId] };
+    username = user.username;
+    console.log(`🔄 Returning user: ${username} (SkiPies: ${user.stats.skipies}%)`);
+  } else {
+    isNewUser = true;
+    username = `Skd${Math.floor(100000 + Math.random() * 900000)}`;
+    user = {
+      username,
+      stats: { skipies: 50, friends: 0, enemies: 0 },
+      daily: { date: "", gained: 0 },
+      deviceId,
+      ip,
+      firstSeen: Date.now(),
+      lastSeen: Date.now()
+    };
+    
+    if (deviceId) {
+      userSessions[deviceId] = user;
+      saveUsers(userSessions);
+    }
+  }
+  
+  user.socketId = socket.id;
+  user.lastSeen = Date.now();
+  users.set(socket.id, user);
+  
+  // ==================== GET COUNTRY ====================
   let country = "Unknown";
   try {
-    const res = await fetch(`https://ipapi.co/${ip}/json/`);
+    const res = await fetch(`http://ip-api.com/json/${ip}?fields=country`);
     const data = await res.json();
-    country = data.country_name || "Unknown";
-  } catch {}
-  socket.country = country;
+    country = data.country || "Unknown";
+  } catch (error) {
+    console.log(`🌍 Country fetch failed for ${ip}:`, error.message);
+  }
+  
+  user.country = country;
   countryCount[country] = (countryCount[country] || 0) + 1;
+  
+  onlineCount = users.size;
+  io.emit("onlineUsers", onlineCount);
+  
+  socket.emit("userData", {
+    id: socket.id,
+    username: user.username,
+    stats: user.stats,
+    messages: [],
+    isNewUser
+  });
 
-  // Session stats
-  socket.stats = { skipies: 50, friends: 0, enemies: 0 };
-  socket.daily = { date: "", gained: 0 };
-  socket.myTopics = [];
+  console.log(`✅ ${isNewUser ? 'New' : 'Returning'} user connected in ${Date.now() - startTime}ms`);
 
-  uuidToSocket.set(socket.id, socket);
-
-  // ─── Admin login ────────────────────────────────────────────────
+  // ==================== ADMIN LOGIN ====================
   socket.on("adminLogin", (pass) => {
     if (pass === ADMIN_PASSWORD) {
       socket.join("admin");
-      socket.emit("adminLoginSuccess");
+      socket.emit("adminLoginSuccess", { token: "admin-token" });
       sendAdminStats();
+      console.log(`👑 Admin logged in from ${ip}`);
+    } else {
+      socket.emit("adminLoginFailed");
     }
   });
 
@@ -68,234 +215,416 @@ io.on("connection", async (socket) => {
     if (socket.rooms.has("admin")) sendAdminStats();
   });
 
-  // ─── Join random with optional topics ──────────────────────────
-  socket.on("joinRandom", ({ topics = [] }) => {
-    socket.myTopics = Array.isArray(topics) ? topics.slice(0, 3) : [];
+  // ==================== USERNAME CHANGE ====================
+  socket.on("changeUsername", async (newUsername) => {
+    if (newUsername && newUsername.length >= 3 && newUsername.length <= 20) {
+      const oldName = user.username;
+      user.username = newUsername;
+      
+      if (user.deviceId) {
+        userSessions[user.deviceId] = user;
+        await saveUsers(userSessions);
+      }
+      
+      socket.emit("usernameChanged", newUsername);
+      console.log(`📝 Username changed: ${oldName} -> ${newUsername}`);
+    }
+  });
 
-    // Clean old queues
-    clearUserFromQueues(socket.id);
+  // ==================== CANCEL SEARCH ====================
+  socket.on("cancelSearch", () => {
+    console.log(`❌ ${user.username} cancelled search`);
+    waitingUsers.delete(socket.id);
+    socket.emit("searchCancelled");
+  });
 
-    if (socket.myTopics.length > 0) {
-      socket.myTopics.forEach(t => {
-        if (!topicQueues.has(t)) topicQueues.set(t, new Set());
-        topicQueues.get(t).add(socket.id);
+  // ==================== JOIN RANDOM CHAT WITH VIDEO OPTION ====================
+  socket.on("joinRandom", ({ topics = [], videoEnabled = false }) => {
+    console.log(`🎲 ${user.username} looking for ${videoEnabled ? 'VIDEO' : 'TEXT'} chat`);
+    
+    waitingUsers.delete(socket.id);
+    socket.videoEnabled = videoEnabled;
+    
+    let matched = null;
+    
+    for (const waitingId of waitingUsers) {
+      const waitingSocket = io.sockets.sockets.get(waitingId);
+      if (waitingSocket && waitingSocket !== socket) {
+        if (waitingSocket.videoEnabled === videoEnabled) {
+          matched = waitingSocket;
+          break;
+        }
+      }
+    }
+    
+    if (matched) {
+      waitingUsers.delete(matched.id);
+      
+      socket.partner = matched.id;
+      matched.partner = socket.id;
+      
+      const matchedUser = users.get(matched.id);
+      
+      socket.emit("partnerStats", {
+        username: matchedUser.username,
+        stats: matchedUser.stats,
+        videoEnabled: videoEnabled
       });
-      tryMatchByTopic(socket);
+      
+      matched.emit("partnerStats", {
+        username: user.username,
+        stats: user.stats,
+        videoEnabled: videoEnabled
+      });
+      
+      if (videoEnabled) {
+        const roomId = `${socket.id}-${matched.id}-${Date.now()}`;
+        videoCallUsers.set(socket.id, { partner: matched.id, room: roomId });
+        videoCallUsers.set(matched.id, { partner: socket.id, room: roomId });
+        
+        socket.emit("videoStart", { 
+          roomId, 
+          initiator: true,
+          iceServers: iceServers 
+        });
+        
+        matched.emit("videoStart", { 
+          roomId, 
+          initiator: false,
+          iceServers: iceServers 
+        });
+        
+        console.log(`✅ Paired ${user.username} with ${matchedUser.username} for VIDEO call`);
+      } else {
+        socket.emit("randomStart");
+        matched.emit("randomStart");
+        console.log(`✅ Paired ${user.username} with ${matchedUser.username} for TEXT chat`);
+      }
     } else {
-      noTopicWaiting.push(socket.id);
-      tryMatchAny();
-    }
-  });
-
-  // ─── Skip ──────────────────────────────────────────────────────
-  socket.on("skipRandom", () => {
-    if (socket.partner) {
-      socket.partner.emit("partnerLeft");
-      socket.partner.partner = null;
-      // Put partner back in queue
-      socket.partner.emit("joinRandom", { topics: socket.partner.myTopics });
-    }
-    socket.partner = null;
-
-    // Put self back in queue
-    socket.emit("joinRandom", { topics: socket.myTopics });
-  });
-
-  // ─── Reactions ─────────────────────────────────────────────────
-  socket.on("sendReaction", (data) => {
-    const target = uuidToSocket.get(data.targetUuid) || socket.partner;
-    if (!target || !target.stats || !reactionConfig[data.emoji]) return;
-
-    const cfg = reactionConfig[data.emoji];
-
-    // Daily cap (UTC day)
-    const today = new Date().toISOString().split("T")[0];
-    if (target.daily.date !== today) {
-      target.daily = { date: today, gained: 0 };
-    }
-    if (target.daily.gained >= 12 && cfg.delta > 0) return;
-
-    let current = target.stats.skipies;
-    let gain = cfg.delta;
-
-    // Diminishing returns near cap
-    if (current >= 70)      gain = Math.max(1, Math.floor(gain * 0.25));
-    else if (current >= 65) gain = Math.max(1, Math.floor(gain * 0.5));
-    else if (current >= 55) gain = Math.floor(gain * 0.75);
-
-    let newVal = Math.max(30, Math.min(80, current + gain));
-
-    if (cfg.friends) target.stats.friends++;
-    if (cfg.enemies) target.stats.enemies++;
-
-    target.stats.skipies = newVal;
-    if (gain > 0) target.daily.gained += gain;
-
-    // Track emoji usage
-    if (data.emoji) {
-      emojiCount[data.emoji] = (emojiCount[data.emoji] || 0) + 1;
-    }
-
-    target.emit("statsUpdated", target.stats);
-
-    // Update skipies list for admin
-    skipiesValues = Array.from(uuidToSocket.values())
-      .filter(s => s.stats)
-      .map(s => s.stats.skipies);
-  });
-
-  // ─── Messages ──────────────────────────────────────────────────
-  socket.on("publicMessage", (data) => {
-    io.emit("publicMessage", {
-      name: data.name || "Anonymous",
-      message: data.message,
-      senderUuid: data.senderUuid
-    });
-  });
-
-  socket.on("randomMessage", (data) => {
-    if (socket.partner) {
-      socket.partner.emit("randomMessage", {
-        name: data.name || "Anonymous",
-        message: data.message,
-        senderUuid: data.senderUuid
+      waitingUsers.add(socket.id);
+      console.log(`⏳ ${user.username} added to waiting queue (${waitingUsers.size} waiting)`);
+      
+      // Send waiting status to the client
+      const position = Array.from(waitingUsers).indexOf(socket.id) + 1;
+      socket.emit("waitingStatus", { 
+        waitingCount: waitingUsers.size,
+        position: position
       });
     }
   });
 
-  // ─── GIF proxy ─────────────────────────────────────────────────
-  socket.on("publicGif", async (data) => {
-    if (!data.url || !data.url.startsWith("http")) return;
-    const proxyUrl = `/proxy-image?url=${encodeURIComponent(data.url)}`;
-    io.emit("publicMessage", {
-      name: data.name || "Anonymous",
-      message: `<img src="${proxyUrl}" width="150" alt="GIF">`,
-      senderUuid: socket.id
-    });
-  });
-
-  socket.on("randomGif", async (data) => {
-    if (!socket.partner || !data.url || !data.url.startsWith("http")) return;
-    const proxyUrl = `/proxy-image?url=${encodeURIComponent(data.url)}`;
-    socket.partner.emit("randomMessage", {
-      name: data.name || "Anonymous",
-      message: `<img src="${proxyUrl}" width="150" alt="GIF">`,
-      senderUuid: socket.id
-    });
-  });
-
-  // ─── Report (basic) ────────────────────────────────────────────
-  socket.on("report", () => {
-    console.log(`Report from ${socket.country} (${socket.id})`);
-  });
-
-  // ─── Disconnect cleanup ────────────────────────────────────────
-  socket.on("disconnect", () => {
-    if (socket.country) {
-      countryCount[socket.country] = Math.max(0, (countryCount[socket.country] || 0) - 1);
-    }
-    clearUserFromQueues(socket.id);
-    uuidToSocket.delete(socket.id);
-    if (socket === waitingUser) waitingUser = null;
+  // ==================== WEBRTC SIGNALING ====================
+  socket.on("webrtc-offer", (data) => {
     if (socket.partner) {
-      socket.partner.emit("partnerLeft");
-      socket.partner.partner = null;
+      io.to(socket.partner).emit("webrtc-offer", {
+        offer: data.offer,
+        from: socket.id
+      });
     }
-    skipiesValues = Array.from(uuidToSocket.values())
-      .filter(s => s.stats)
-      .map(s => s.stats.skipies);
+  });
+
+  socket.on("webrtc-answer", (data) => {
+    if (socket.partner) {
+      io.to(socket.partner).emit("webrtc-answer", {
+        answer: data.answer,
+        from: socket.id
+      });
+    }
+  });
+
+  socket.on("webrtc-ice-candidate", (data) => {
+    if (socket.partner) {
+      io.to(socket.partner).emit("webrtc-ice-candidate", {
+        candidate: data.candidate,
+        from: socket.id
+      });
+    }
+  });
+
+  socket.on("endVideoCall", () => {
+    const callData = videoCallUsers.get(socket.id);
+    if (callData && callData.partner) {
+      io.to(callData.partner).emit("videoCallEnded");
+      videoCallUsers.delete(socket.id);
+      videoCallUsers.delete(callData.partner);
+    }
+    
+    if (socket.partner) {
+      const partnerSocket = io.sockets.sockets.get(socket.partner);
+      if (partnerSocket) {
+        partnerSocket.emit("partnerLeft");
+        partnerSocket.partner = null;
+      }
+      socket.partner = null;
+    }
+  });
+
+  // ==================== PUBLIC MESSAGE ====================
+  socket.on("publicMessage", (data) => {
+    if (!data.message || typeof data.message !== "string") return;
+    if (data.message.length > 4000) {
+      socket.emit("error", "Message too long (max 4000 chars)");
+      return;
+    }
+    
+    const filtered = data.message
+      .replace(/fuck|shit|ass|bitch|cunt|nigger|faggot/gi, "***");
+    
+    io.emit("publicMessage", {
+      name: user.username,
+      message: filtered,
+      senderUuid: socket.id,
+      timestamp: Date.now()
+    });
+  });
+
+  // ==================== RANDOM MESSAGE ====================
+  socket.on("randomMessage", (data) => {
+    if (!socket.partner) {
+      socket.emit("error", "No partner connected");
+      return;
+    }
+    
+    if (!data.message || typeof data.message !== "string") return;
+    if (data.message.length > 4000) {
+      socket.emit("error", "Message too long (max 4000 chars)");
+      return;
+    }
+    
+    const filtered = data.message
+      .replace(/fuck|shit|ass|bitch|cunt|nigger|faggot/gi, "***");
+    
+    messageQueue.push({
+      from: socket.id,
+      to: socket.partner,
+      content: filtered,
+      senderName: user.username,
+      timestamp: Date.now()
+    });
+  });
+
+  // ==================== PUBLIC GIF ====================
+  socket.on("publicGif", (data) => {
+    if (!data.url || !data.url.startsWith("http")) return;
+    
+    io.emit("publicMessage", {
+      name: user.username,
+      message: `<img src="/proxy-image?url=${encodeURIComponent(data.url)}" style="max-width:200px; border-radius:10px;" loading="lazy">`,
+      senderUuid: socket.id,
+      timestamp: Date.now()
+    });
+  });
+
+  // ==================== RANDOM GIF ====================
+  socket.on("randomGif", (data) => {
+    if (!socket.partner || !data.url || !data.url.startsWith("http")) return;
+    
+    messageQueue.push({
+      from: socket.id,
+      to: socket.partner,
+      content: `<img src="/proxy-image?url=${encodeURIComponent(data.url)}" style="max-width:200px; border-radius:10px;" loading="lazy">`,
+      senderName: user.username,
+      timestamp: Date.now()
+    });
+  });
+
+  // ==================== SEND REACTION ====================
+  socket.on("sendReaction", (data) => {
+    let targetId = data.targetUuid;
+    
+    if (data.targetUuid === "lastPartner" && socket.partner) {
+      targetId = socket.partner;
+    }
+    
+    const target = users.get(targetId);
+    const sender = users.get(socket.id);
+    
+    if (!target || !reactionConfig[data.emoji]) return;
+    
+    const cfg = reactionConfig[data.emoji];
+    const isSelf = targetId === socket.id;
+    
+    if (!isSelf) {
+      const today = new Date().toISOString().split("T")[0];
+      if (target.daily.date !== today) {
+        target.daily = { date: today, gained: 0 };
+      }
+      
+      if (!(target.daily.gained >= 12 && cfg.delta > 0)) {
+        let gain = cfg.delta;
+        
+        if (target.stats.skipies >= 70) gain = Math.max(1, Math.floor(gain * 0.25));
+        else if (target.stats.skipies >= 65) gain = Math.max(1, Math.floor(gain * 0.5));
+        else if (target.stats.skipies >= 55) gain = Math.floor(gain * 0.75);
+        
+        target.stats.skipies = Math.max(30, Math.min(80, target.stats.skipies + gain));
+        
+        if (cfg.friends) target.stats.friends++;
+        if (cfg.enemies) target.stats.enemies++;
+        
+        if (gain > 0) target.daily.gained += gain;
+        
+        if (target.deviceId) {
+          userSessions[target.deviceId] = target;
+        }
+      }
+    }
+    
+    emojiCount[data.emoji] = (emojiCount[data.emoji] || 0) + 1;
+    
+    if (targetId && !isSelf) {
+      const targetSocket = io.sockets.sockets.get(targetId);
+      if (targetSocket) {
+        targetSocket.emit("reactionReceived", {
+          emoji: data.emoji,
+          from: sender.username,
+          fromId: socket.id,
+          targetId: targetId,
+          isSelf: false,
+          timestamp: Date.now()
+        });
+        
+        targetSocket.emit("statsUpdated", target.stats);
+      }
+    }
+    
+    socket.emit("reactionReceived", {
+      emoji: data.emoji,
+      from: sender.username,
+      fromId: socket.id,
+      targetId: targetId,
+      isSelf: isSelf,
+      timestamp: Date.now()
+    });
+    
+    if (isSelf) {
+      socket.emit("statsUpdated", sender.stats);
+    }
+  });
+
+  // ==================== SKIP RANDOM ====================
+  socket.on("skipRandom", () => {
+    console.log(`⏭️ ${user.username} skipped`);
+    
+    const callData = videoCallUsers.get(socket.id);
+    if (callData) {
+      io.to(callData.partner).emit("videoCallEnded");
+      videoCallUsers.delete(socket.id);
+      videoCallUsers.delete(callData.partner);
+    }
+    
+    if (socket.partner) {
+      const partnerSocket = io.sockets.sockets.get(socket.partner);
+      if (partnerSocket) {
+        partnerSocket.emit("partnerLeft");
+        partnerSocket.partner = null;
+        
+        const partnerUser = users.get(socket.partner);
+        if (partnerUser) {
+          waitingUsers.add(socket.partner);
+        }
+      }
+    }
+    
+    socket.partner = null;
+  });
+
+  // ==================== REPORT USER ====================
+  socket.on("report", (data) => {
+    const reportedId = socket.partner;
+    if (!reportedId) {
+      socket.emit("error", "No user to report");
+      return;
+    }
+    
+    const reportedUser = users.get(reportedId);
+    console.log(`🚨 Report from ${user.username} against ${reportedUser?.username || 'unknown'}`);
+    
+    socket.emit("reportSubmitted", {
+      message: "Report submitted. Thank you for keeping Skideey safe!"
+    });
+    
+    io.to("admin").emit("userReported", {
+      reporter: user.username,
+      reported: reportedUser?.username,
+      reason: data.reason || "Inappropriate behavior"
+    });
+  });
+
+  // ==================== DISCONNECT ====================
+  socket.on("disconnect", async () => {
+    console.log(`🔌 Disconnected: ${user.username} (${socket.id})`);
+    
+    const callData = videoCallUsers.get(socket.id);
+    if (callData) {
+      io.to(callData.partner).emit("videoCallEnded");
+      videoCallUsers.delete(socket.id);
+      videoCallUsers.delete(callData.partner);
+    }
+    
+    if (user.country) {
+      countryCount[user.country] = Math.max(0, (countryCount[user.country] || 0) - 1);
+    }
+    
+    waitingUsers.delete(socket.id);
+    
+    if (socket.partner) {
+      const partnerSocket = io.sockets.sockets.get(socket.partner);
+      if (partnerSocket) {
+        partnerSocket.emit("partnerLeft");
+        partnerSocket.partner = null;
+      }
+    }
+    
+    users.delete(socket.id);
+    
+    onlineCount = users.size;
+    io.emit("onlineUsers", onlineCount);
+    
+    if (user.deviceId) {
+      user.lastSeen = Date.now();
+      userSessions[user.deviceId] = user;
+      await saveUsers(userSessions);
+    }
   });
 });
 
-// ─── Matching helpers ─────────────────────────────────────────────
-function clearUserFromQueues(socketId) {
-  for (const queue of topicQueues.values()) queue.delete(socketId);
-  const idx = noTopicWaiting.indexOf(socketId);
-  if (idx !== -1) noTopicWaiting.splice(idx, 1);
-}
-
-function tryMatchByTopic(socket) {
-  let bestPartnerId = null;
-  let maxShared = 0;
-
-  for (const [topic, ids] of topicQueues) {
-    if (!socket.myTopics.includes(topic)) continue;
-    for (const otherId of ids) {
-      if (otherId === socket.id) continue;
-      const other = uuidToSocket.get(otherId);
-      if (!other || other.partner) continue;
-
-      const shared = other.myTopics.filter(t => socket.myTopics.includes(t)).length;
-      if (shared > maxShared) {
-        maxShared = shared;
-        bestPartnerId = otherId;
-      }
-    }
-  }
-
-  if (bestPartnerId) {
-    const partner = uuidToSocket.get(bestPartnerId);
-    if (partner) {
-      pairUsers(socket, partner);
-      return true;
-    }
-  }
-
-  // No good match → try any
-  tryMatchAny();
-}
-
-function tryMatchAny() {
-  if (noTopicWaiting.length >= 2) {
-    const id1 = noTopicWaiting.shift();
-    const id2 = noTopicWaiting.shift();
-    const s1 = uuidToSocket.get(id1);
-    const s2 = uuidToSocket.get(id2);
-    if (s1 && s2 && !s1.partner && !s2.partner) {
-      pairUsers(s1, s2);
-    }
-  }
-}
-
-function pairUsers(s1, s2) {
-  s1.partner = s2;
-  s2.partner = s1;
-
-  s1.emit("partnerStats", s2.stats);
-  s2.emit("partnerStats", s1.stats);
-
-  s1.emit("randomStart");
-  s2.emit("randomStart");
-
-  clearUserFromQueues(s1.id);
-  clearUserFromQueues(s2.id);
-}
-
-// ─── Admin stats broadcaster ─────────────────────────────────────
+// ==================== ADMIN STATS ====================
 function sendAdminStats() {
-  const online = io.engine.clientsCount;
-
+  const online = users.size;
+  const totalUsers = Object.keys(userSessions).length;
+  
   const emojisSorted = Object.entries(emojiCount)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10);
-
+  
   const countriesSorted = Object.entries(countryCount)
     .sort((a, b) => b[1] - a[1]);
-
-  const avg = skipiesValues.length
+  
+  const skipiesValues = Array.from(users.values())
+    .map(u => u.stats?.skipies || 50);
+  
+  const avgSkipies = skipiesValues.length
     ? skipiesValues.reduce((a, b) => a + b, 0) / skipiesValues.length
     : 50;
-
-  const max = skipiesValues.length ? Math.max(...skipiesValues) : 80;
-  const high = skipiesValues.filter(v => v >= 70).length;
-
+  
+  const maxSkipies = skipiesValues.length ? Math.max(...skipiesValues) : 80;
+  const above70 = skipiesValues.filter(v => v >= 70).length;
+  
+  const videoCallCount = videoCallUsers.size / 2;
+  
   io.to("admin").emit("adminStats", {
     online,
+    totalUsers,
     emojis: Object.fromEntries(emojisSorted),
     countries: Object.fromEntries(countriesSorted),
-    avgSkipies: Math.round(avg * 10) / 10,
-    maxSkipies: Math.round(max),
-    above70: high
+    avgSkipies: Math.round(avgSkipies * 10) / 10,
+    maxSkipies: Math.round(maxSkipies),
+    above70,
+    activeRooms: Math.floor((online - videoCallCount) / 2),
+    videoCalls: videoCallCount,
+    queueSize: messageQueue.length,
+    waitingCount: waitingUsers.size
   });
 }
 
@@ -303,30 +632,64 @@ setInterval(() => {
   if (io.sockets.adapter.rooms.get("admin")?.size > 0) {
     sendAdminStats();
   }
-}, 6000);
+}, 5000);
 
-// ─── Image proxy route ─────────────────────────────────────────────
+// ==================== IMAGE PROXY ====================
 app.get("/proxy-image", async (req, res) => {
   const url = req.query.url;
-  if (!url || !url.startsWith("http")) return res.status(400).send("Invalid URL");
+  if (!url || !url.startsWith("http")) {
+    return res.status(400).send("Invalid URL");
+  }
 
   try {
-    const response = await fetch(url, { redirect: "follow", timeout: 8000 });
-    if (!response.ok) return res.status(400).send("Cannot fetch");
+    const response = await fetch(url, { 
+      redirect: "follow", 
+      timeout: 5000,
+      size: 5 * 1024 * 1024
+    });
+    
+    if (!response.ok) {
+      return res.status(400).send("Cannot fetch");
+    }
 
     const contentType = response.headers.get("content-type") || "";
-    if (!contentType.startsWith("image/")) return res.status(400).send("Not an image");
+    if (!contentType.startsWith("image/")) {
+      return res.status(400).send("Not an image");
+    }
 
     res.set("Content-Type", contentType);
-    res.set("Cache-Control", "public, max-age=3600");
+    res.set("Cache-Control", "public, max-age=86400");
+    res.set("X-Content-Type-Options", "nosniff");
+    
     response.body.pipe(res);
   } catch (err) {
+    console.error("Proxy error:", err.message);
     res.status(500).send("Proxy error");
   }
 });
 
-server.listen(3000, () => {
-  console.log("Skideey server running on port 3000");
-  console.log("Main app: http://localhost:3000/");
-  console.log("Admin panel: http://localhost:3000/admin.html");
+// ==================== HEALTH CHECK ====================
+app.get("/health", (req, res) => {
+  res.json({
+    status: "healthy",
+    online: users.size,
+    totalUsers: Object.keys(userSessions).length,
+    videoCalls: videoCallUsers.size / 2,
+    waiting: waitingUsers.size,
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    nodeVersion: process.version
+  });
+});
+
+// ==================== START SERVER ====================
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`🚀 Skideey server running on port ${PORT}`);
+  console.log(`📱 Main app: http://localhost:${PORT}`);
+  console.log(`🔧 Admin: http://localhost:${PORT}/admin.html`);
+  console.log(`💾 User data saved to: ${DATA_FILE}`);
+  console.log(`📊 Total saved users: ${Object.keys(userSessions).length}`);
+  console.log(`🎥 Video calls supported with WebRTC`);
+  console.log(`❌ Cancel search feature enabled`);
 });
