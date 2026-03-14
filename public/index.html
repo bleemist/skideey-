@@ -199,7 +199,7 @@
 
     .message {
       margin: 12px 0;
-      padding: 10px 14px;
+      padding: 12px 16px;
       border-radius: 18px;
       max-width: 80%;
       word-break: break-word;
@@ -255,30 +255,79 @@
     .message-footer {
       display: flex;
       justify-content: flex-end;
-      margin-top: 4px;
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-
-    .message:hover .message-footer {
-      opacity: 1;
+      margin-top: 8px;
+      opacity: 1; /* Always visible on mobile */
     }
 
     .reaction-btn {
-      background: none;
-      border: none;
-      color: #888;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
       font-size: 1.2rem;
       cursor: pointer;
-      padding: 4px 8px;
-      border-radius: 20px;
+      padding: 6px 12px;
+      border-radius: 30px;
       transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      backdrop-filter: blur(5px);
     }
 
     .reaction-btn:hover {
+      background: rgba(255,122,0,0.3);
+      border-color: #ff7a00;
+      transform: scale(1.05);
+    }
+
+    .reaction-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Message Reactions Display */
+    .message-reactions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .reaction-badge {
       background: rgba(255,122,0,0.2);
-      color: #ff7a00;
+      border: 1px solid rgba(255,122,0,0.3);
+      border-radius: 30px;
+      padding: 4px 12px;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      color: white;
+      backdrop-filter: blur(5px);
+    }
+
+    .reaction-badge.reacted {
+      background: rgba(255,122,0,0.4);
+      border-color: #ff7a00;
+      box-shadow: 0 0 10px rgba(255,122,0,0.3);
+    }
+
+    .reaction-badge:hover {
       transform: scale(1.1);
+      background: rgba(255,122,0,0.3);
+    }
+
+    .reaction-badge .count {
+      font-weight: 600;
+      color: #ffaa40;
+    }
+
+    .reaction-badge.reacted .count {
+      color: white;
     }
 
     /* Emoji Picker */
@@ -291,7 +340,7 @@
       gap: 8px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
       z-index: 1000;
-      border: 1px solid #333;
+      border: 2px solid #ff7a00;
       animation: popIn 0.2s ease;
     }
 
@@ -313,6 +362,7 @@
       align-items: center;
       justify-content: center;
       transition: all 0.2s;
+      position: relative;
     }
 
     .emoji-option:hover {
@@ -320,16 +370,45 @@
       transform: scale(1.2);
     }
 
-    /* Input Area */
+    .emoji-option:active {
+      transform: scale(0.9);
+    }
+
+    .emoji-option.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .emoji-option.disabled::after {
+      content: '✓';
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #ff7a00;
+      color: white;
+      font-size: 1rem;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid white;
+    }
+
+    /* Input Area - FIXED FOR MOBILE */
     .input-container {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       margin-top: 10px;
+      flex-wrap: wrap;
     }
 
     .message-input {
       flex: 1;
-      padding: 14px;
+      min-width: 200px;
+      padding: 14px 18px;
       background: #1a1a1a;
       border: 2px solid #333;
       border-radius: 30px;
@@ -343,97 +422,76 @@
       border-color: #ff7a00;
     }
 
-    .send-btn {
-      width: 50px;
-      height: 50px;
-      background: #ff7a00;
-      color: white;
+    .action-buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .action-btn {
+      min-width: 45px;
+      height: 45px;
       border: none;
       border-radius: 50%;
       font-size: 1.2rem;
       cursor: pointer;
+      transition: all 0.3s;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.3s;
+      background: #222;
+      color: #aaa;
+      flex-shrink: 0;
     }
 
-    .send-btn:hover {
+    .action-btn.send {
+      background: #ff7a00;
+      color: white;
+    }
+
+    .action-btn.send:hover {
       background: #ff9429;
       transform: scale(1.1) rotate(90deg);
     }
 
-    .skip-btn {
-      width: 50px;
-      height: 50px;
+    .action-btn.skip {
       background: #ffbb33;
       color: black;
-      border: none;
-      border-radius: 50%;
-      font-size: 1.2rem;
-      cursor: pointer;
-      transition: all 0.3s;
     }
 
-    .skip-btn:hover {
+    .action-btn.skip:hover {
       background: #ffcc66;
       transform: scale(1.1);
     }
 
-    .cancel-btn {
-      width: auto;
-      padding: 10px 20px;
-      height: auto;
+    .action-btn.report {
       background: #e63946;
       color: white;
-      border: none;
-      border-radius: 30px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.3s;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
     }
 
-    .cancel-btn:hover {
-      background: #ff4d5e;
-      transform: scale(1.05);
-    }
-
-    .report-btn {
-      width: 50px;
-      height: 50px;
-      background: #e63946;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      font-size: 1.2rem;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-
-    .report-btn:hover {
+    .action-btn.report:hover {
       background: #ff4d5e;
       transform: scale(1.1);
     }
 
-    .icon-btn {
-      width: 50px;
-      height: 50px;
+    .action-btn.gif {
       background: #222;
       color: #aaa;
-      border: none;
-      border-radius: 50%;
-      font-size: 1.2rem;
-      cursor: pointer;
-      transition: all 0.3s;
     }
 
-    .icon-btn:hover {
+    .action-btn.gif:hover {
       background: #333;
       color: #ff7a00;
       transform: scale(1.1);
+    }
+
+    .action-btn.cancel {
+      background: #e63946;
+      color: white;
+      border-radius: 30px;
+      padding: 0 20px;
+      min-width: auto;
     }
 
     /* Topic Selector */
@@ -448,12 +506,13 @@
     .topic-selector h3 {
       color: #ffaa40;
       margin-bottom: 16px;
+      font-size: 1.1rem;
     }
 
     .topics-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-      gap: 10px;
+      gap: 8px;
       margin: 16px 0;
     }
 
@@ -461,10 +520,14 @@
       background: #222;
       border: 2px solid #333;
       color: #aaa;
-      padding: 10px;
+      padding: 10px 5px;
       border-radius: 30px;
       cursor: pointer;
       transition: all 0.3s;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .topic-btn:hover {
@@ -609,16 +672,18 @@
       gap: 10px;
       justify-content: center;
       margin: 10px 0;
+      flex-wrap: wrap;
     }
 
     .control-btn {
-      width: 50px;
+      min-width: 50px;
       height: 50px;
       border: none;
       border-radius: 50%;
       cursor: pointer;
       font-size: 1.2rem;
       transition: all 0.3s;
+      flex-shrink: 0;
     }
 
     .control-btn:hover {
@@ -676,6 +741,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     .partner-name {
@@ -694,7 +761,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px;
+      padding: 30px 20px;
       background: #1a1a1a;
       border-radius: 16px;
       margin: 16px 0;
@@ -719,11 +786,13 @@
       color: #aaa;
       font-size: 1.1rem;
       margin-bottom: 10px;
+      text-align: center;
     }
 
     .loading-dots {
       display: flex;
       gap: 8px;
+      margin: 10px 0;
     }
 
     .loading-dots span {
@@ -747,6 +816,25 @@
       30% { transform: scale(1); opacity: 1; }
     }
 
+    .cancel-btn {
+      background: #e63946;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 10px;
+      width: auto;
+      min-width: 150px;
+    }
+
+    .cancel-btn:hover {
+      background: #ff4d5e;
+      transform: scale(1.05);
+    }
+
     /* Reaction Toast */
     .reaction-toast {
       position: fixed;
@@ -761,6 +849,10 @@
       animation: slideUp 0.3s ease;
       z-index: 2000;
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      white-space: nowrap;
+      max-width: 90%;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .reaction-toast.self {
@@ -929,6 +1021,8 @@
       max-width: 400px;
       width: 100%;
       border: 1px solid #333;
+      max-height: 80vh;
+      overflow-y: auto;
     }
 
     .modal-content h2 {
@@ -970,6 +1064,12 @@
       transform: scale(1.1);
     }
 
+    .emoji-grid button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      border-color: #ff7a00;
+    }
+
     /* Toast */
     .toast {
       position: fixed;
@@ -981,6 +1081,10 @@
       color: white;
       animation: slideUp 0.3s ease;
       z-index: 3000;
+      max-width: 90%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .toast.success {
@@ -1009,7 +1113,7 @@
       display: none !important;
     }
 
-    /* Mobile Responsive */
+    /* Mobile Responsive - COMPLETELY FIXED */
     @media (max-width: 768px) {
       .message {
         max-width: 90%;
@@ -1020,40 +1124,41 @@
       }
 
       .input-container {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .message-input {
+        width: 100%;
+        min-width: 100%;
+      }
+
+      .action-buttons {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        width: 100%;
         gap: 5px;
       }
 
-      .send-btn, .skip-btn, .report-btn, .icon-btn {
-        width: 45px;
+      .action-btn {
+        flex: 1;
+        min-width: 45px;
         height: 45px;
-        font-size: 1rem;
+        border-radius: 30px;
       }
-      
-      .cancel-btn {
-        padding: 8px 16px;
-        font-size: 0.9rem;
+
+      .action-btn.send,
+      .action-btn.skip,
+      .action-btn.report,
+      .action-btn.gif {
+        border-radius: 30px;
+        padding: 0 10px;
       }
-      
-      .emoji-picker {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        top: auto;
-        width: 90%;
-        justify-content: center;
-        animation: slideUpPicker 0.3s ease;
-      }
-      
-      @keyframes slideUpPicker {
-        from { transform: translateX(-50%) translateY(100%); opacity: 0; }
-        to { transform: translateX(-50%) translateY(0); opacity: 1; }
-      }
-      
-      .emoji-option {
-        width: 40px;
-        height: 40px;
-        font-size: 1.5rem;
+
+      .partner-info {
+        flex-direction: column;
+        align-items: flex-start;
       }
 
       .video-grid {
@@ -1063,11 +1168,91 @@
       .video-element {
         height: 200px;
       }
+
+      .video-controls {
+        justify-content: space-around;
+      }
+
+      .control-btn {
+        min-width: 45px;
+        height: 45px;
+      }
+
+      .emoji-picker {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        top: auto;
+        width: 90%;
+        justify-content: center;
+        animation: slideUpPicker 0.3s ease;
+        flex-wrap: wrap;
+        border-radius: 50px;
+      }
+      
+      @keyframes slideUpPicker {
+        from { transform: translateX(-50%) translateY(100%); opacity: 0; }
+        to { transform: translateX(-50%) translateY(0); opacity: 1; }
+      }
+      
+      .emoji-option {
+        width: 45px;
+        height: 45px;
+        font-size: 1.5rem;
+      }
+
+      .reaction-toast, .toast {
+        font-size: 0.9rem;
+        padding: 10px 16px;
+        white-space: normal;
+        word-break: break-word;
+        text-align: center;
+      }
     }
 
     @media (max-width: 480px) {
       .topics-grid {
         grid-template-columns: repeat(2, 1fr);
+      }
+
+      .action-btn {
+        font-size: 1rem;
+      }
+
+      .action-buttons {
+        gap: 4px;
+      }
+
+      .message {
+        max-width: 95%;
+      }
+
+      .emoji-option {
+        width: 40px;
+        height: 40px;
+        font-size: 1.3rem;
+      }
+
+      .cancel-btn {
+        width: 100%;
+      }
+    }
+
+    /* Fix for very small screens */
+    @media (max-width: 360px) {
+      .action-buttons {
+        flex-wrap: wrap;
+      }
+
+      .action-btn {
+        flex: auto;
+        min-width: 40px;
+      }
+
+      .topic-btn {
+        font-size: 0.8rem;
+        padding: 8px 4px;
       }
     }
   </style>
@@ -1097,9 +1282,9 @@
     </div>
     
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('random')">🎲 Random Chat</button>
-      <button class="tab-btn" onclick="switchTab('public')">🌍 Public Chat</button>
-      <button class="tab-btn" onclick="switchTab('stats')">📊 My Stats</button>
+      <button class="tab-btn active" onclick="switchTab('random')">🎲 Random</button>
+      <button class="tab-btn" onclick="switchTab('public')">🌍 Public</button>
+      <button class="tab-btn" onclick="switchTab('stats')">📊 Stats</button>
     </div>
 
     <div class="user-info">
@@ -1178,10 +1363,12 @@
       <div id="randomMessages" class="messages-container"></div>
       <div class="input-container">
         <input type="text" id="randomInput" class="message-input" placeholder="Type a message..." maxlength="4000">
-        <button class="send-btn" onclick="sendRandom()">➤</button>
-        <button class="icon-btn" onclick="openGifPicker('random')">🎨</button>
-        <button class="skip-btn" onclick="skipRandom()">⏭</button>
-        <button class="report-btn" onclick="reportUser()">⚠️</button>
+        <div class="action-buttons">
+          <button class="action-btn send" onclick="sendRandom()">➤</button>
+          <button class="action-btn gif" onclick="openGifPicker('random')">🎨</button>
+          <button class="action-btn skip" onclick="skipRandom()">⏭</button>
+          <button class="action-btn report" onclick="reportUser()">⚠️</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1191,8 +1378,10 @@
     <div id="publicMessages" class="messages-container"></div>
     <div class="input-container">
       <input type="text" id="publicInput" class="message-input" placeholder="Type a public message..." maxlength="4000">
-      <button class="send-btn" onclick="sendPublic()">➤</button>
-      <button class="icon-btn" onclick="openGifPicker('public')">🎨</button>
+      <div class="action-buttons">
+        <button class="action-btn send" onclick="sendPublic()">➤</button>
+        <button class="action-btn gif" onclick="openGifPicker('public')">🎨</button>
+      </div>
     </div>
   </div>
 
@@ -1288,6 +1477,9 @@
   // Search variables
   let searchTimeout = null;
   let searchStartTime = null;
+  
+  // Reaction tracking - stores which user has reacted with which emoji to which message
+  let userReactions = new Map(); // Key: `${messageId}-${emoji}` -> userId
   
   // Generate or retrieve device ID
   if (!deviceId) {
@@ -1401,7 +1593,9 @@
       }
     });
 
+    // ==================== UPDATED REACTION HANDLER ====================
     socket.on('reactionReceived', (data) => {
+      // Show floating animation
       const anim = document.createElement('div');
       anim.className = 'reaction-animation';
       anim.innerText = data.emoji;
@@ -1410,11 +1604,15 @@
       document.body.appendChild(anim);
       setTimeout(() => anim.remove(), 1000);
 
+      // Show toast notification
       const toast = document.createElement('div');
       toast.className = `reaction-toast ${data.isSelf ? 'self' : ''}`;
       toast.innerText = data.isSelf ? `You reacted with ${data.emoji}` : `${data.from} reacted with ${data.emoji}`;
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 2000);
+
+      // Add reaction badge to message
+      addReactionToMessage(data);
     });
 
     socket.on('banned', (data) => {
@@ -1616,6 +1814,7 @@
     
     msgDiv.className = `message ${isOwn ? 'own' : 'other'}`;
     msgDiv.dataset.senderId = data.senderUuid;
+    msgDiv.dataset.messageId = data.id || `msg-${Date.now()}-${Math.random()}`;
     
     const time = new Date(data.timestamp || Date.now()).toLocaleTimeString([], { 
       hour: '2-digit', 
@@ -1628,8 +1827,11 @@
         <span class="message-time">${time}</span>
       </div>
       <div class="message-content">${data.message}</div>
+      <div class="message-reactions"></div>
       <div class="message-footer">
-        <button class="reaction-btn" onclick="showEmojiPicker('${data.senderUuid}', this)">😊</button>
+        <button class="reaction-btn" onclick="showEmojiPicker('${data.senderUuid}', '${msgDiv.dataset.messageId}', this)">
+          😊 React
+        </button>
       </div>
     `;
     
@@ -1637,10 +1839,83 @@
     container.scrollTop = container.scrollHeight;
   }
 
+  // ==================== NEW FUNCTION TO ADD REACTION TO MESSAGE ====================
+  function addReactionToMessage(data) {
+    // Find the message by sender ID and approximate time (since we don't have message IDs from server)
+    const messages = document.querySelectorAll('.message');
+    let targetMessage = null;
+    
+    for (const msg of messages) {
+      if (msg.dataset.senderId === data.targetId) {
+        targetMessage = msg;
+        break;
+      }
+    }
+    
+    if (!targetMessage) return;
+    
+    const reactionsDiv = targetMessage.querySelector('.message-reactions');
+    if (!reactionsDiv) return;
+    
+    // Check if this reaction already exists
+    let existingReaction = null;
+    const reactionButtons = reactionsDiv.querySelectorAll('.reaction-badge');
+    
+    for (const btn of reactionButtons) {
+      if (btn.dataset.emoji === data.emoji) {
+        existingReaction = btn;
+        break;
+      }
+    }
+    
+    const messageId = targetMessage.dataset.messageId;
+    const reactionKey = `${messageId}-${data.emoji}`;
+    const hasUserReacted = userReactions.get(reactionKey) === socket.id;
+    
+    if (existingReaction) {
+      // Update count
+      let count = parseInt(existingReaction.dataset.count || '1') + 1;
+      existingReaction.dataset.count = count;
+      existingReaction.innerHTML = `${data.emoji} <span class="count">${count}</span>`;
+      
+      // Mark as reacted if this user reacted
+      if (hasUserReacted) {
+        existingReaction.classList.add('reacted');
+      }
+    } else {
+      // Create new reaction badge
+      const reactionBadge = document.createElement('span');
+      reactionBadge.className = `reaction-badge ${hasUserReacted ? 'reacted' : ''}`;
+      reactionBadge.dataset.emoji = data.emoji;
+      reactionBadge.dataset.count = '1';
+      reactionBadge.innerHTML = `${data.emoji} <span class="count">1</span>`;
+      reactionBadge.title = `Reacted by ${data.from}`;
+      reactionsDiv.appendChild(reactionBadge);
+    }
+    
+    // Animate
+    const newBadge = reactionsDiv.querySelector(`[data-emoji="${data.emoji}"]`);
+    if (newBadge) {
+      newBadge.style.animation = 'badgePop 0.3s ease';
+      setTimeout(() => {
+        newBadge.style.animation = '';
+      }, 300);
+    }
+  }
+
   function sendPublic() {
     const input = document.getElementById('publicInput');
     const msg = input.value.trim();
     if (!msg) return;
+    
+    // Add message locally immediately
+    addMessage({
+      name: userData?.username || 'Anonymous',
+      message: msg,
+      senderUuid: socket.id,
+      timestamp: Date.now(),
+      id: `msg-${Date.now()}-${Math.random()}`
+    }, 'public');
     
     socket.emit('publicMessage', {
       name: userData?.username || 'Anonymous',
@@ -1656,6 +1931,15 @@
     const msg = input.value.trim();
     if (!msg) return;
     
+    // Add message locally immediately
+    addMessage({
+      name: userData?.username || 'Anonymous',
+      message: msg,
+      senderUuid: socket.id,
+      timestamp: Date.now(),
+      id: `msg-${Date.now()}-${Math.random()}`
+    }, 'random');
+    
     socket.emit('randomMessage', {
       name: userData?.username || 'Anonymous',
       message: msg,
@@ -1665,8 +1949,8 @@
     input.value = '';
   }
 
-  // ==================== REACTION FUNCTIONS ====================
-  function showEmojiPicker(targetUuid, btn) {
+  // ==================== UPDATED REACTION FUNCTIONS ====================
+  function showEmojiPicker(targetUuid, messageId, btn) {
     const existing = document.querySelector('.emoji-picker');
     if (existing) existing.remove();
 
@@ -1679,11 +1963,60 @@
       const emojiBtn = document.createElement('button');
       emojiBtn.className = 'emoji-option';
       emojiBtn.innerText = emoji;
+      
+      // Check if user already reacted with this emoji to this message
+      const reactionKey = `${messageId}-${emoji}`;
+      const hasReacted = userReactions.get(reactionKey) === socket.id;
+      
+      if (hasReacted) {
+        emojiBtn.classList.add('disabled');
+        emojiBtn.disabled = true;
+      }
+      
       emojiBtn.onclick = (e) => {
         e.stopPropagation();
-        socket.emit('sendReaction', { targetUuid, emoji });
+        
+        // Store that user has reacted
+        userReactions.set(reactionKey, socket.id);
+        
+        socket.emit('sendReaction', { targetUuid, emoji, messageId });
+        
+        // Update UI immediately
+        const messageEl = btn.closest('.message');
+        if (messageEl) {
+          const reactionsDiv = messageEl.querySelector('.message-reactions');
+          if (reactionsDiv) {
+            // Check if reaction already exists
+            let existingReaction = null;
+            const reactionBadges = reactionsDiv.querySelectorAll('.reaction-badge');
+            
+            for (const badge of reactionBadges) {
+              if (badge.dataset.emoji === emoji) {
+                existingReaction = badge;
+                break;
+              }
+            }
+            
+            if (existingReaction) {
+              let count = parseInt(existingReaction.dataset.count || '1') + 1;
+              existingReaction.dataset.count = count;
+              existingReaction.innerHTML = `${emoji} <span class="count">${count}</span>`;
+              existingReaction.classList.add('reacted');
+            } else {
+              const reactionBadge = document.createElement('span');
+              reactionBadge.className = 'reaction-badge reacted';
+              reactionBadge.dataset.emoji = emoji;
+              reactionBadge.dataset.count = '1';
+              reactionBadge.innerHTML = `${emoji} <span class="count">1</span>`;
+              reactionBadge.title = 'You reacted';
+              reactionsDiv.appendChild(reactionBadge);
+            }
+          }
+        }
+        
         picker.remove();
       };
+      
       picker.appendChild(emojiBtn);
     });
     
@@ -1753,11 +2086,9 @@
       <div class="loading-dots">
         <span></span><span></span><span></span>
       </div>
-      <div style="margin-top: 20px; width: 100%; display: flex; gap: 10px; justify-content: center;">
-        <button id="cancelSearchBtn" class="cancel-btn" onclick="cancelSearch()">
-          ❌ Cancel Search
-        </button>
-      </div>
+      <button class="cancel-btn" onclick="cancelSearch()">
+        ❌ Cancel Search
+      </button>
       <div id="searchStatus" style="margin-top: 10px; color: #ffaa40; font-size: 0.9rem;">
         Looking for users...
       </div>
