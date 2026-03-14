@@ -406,7 +406,6 @@
     document.getElementById('totalUsers').innerText = data.totalUsers || 0;
     document.getElementById('queueSize').innerText = data.queueSize || 0;
 
-    // Emojis table
     let emojiHtml = '';
     if (data.emojis) {
       Object.entries(data.emojis)
@@ -417,7 +416,6 @@
     }
     document.getElementById('emojiTable').querySelector('tbody').innerHTML = emojiHtml || '<tr><td colspan="2" style="text-align:center; color:#777;">No data</td></tr>';
 
-    // Countries table
     let countryHtml = '';
     if (data.countries) {
       Object.entries(data.countries)

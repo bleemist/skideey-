@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Skideey • Gamified Anonymous Chat with Video</title>
+  <title>Skideey • Gamified Anonymous Chat</title>
   <style>
     * {
       margin: 0;
@@ -203,7 +203,6 @@
       border-radius: 18px;
       max-width: 80%;
       word-break: break-word;
-      position: relative;
       animation: fadeIn 0.3s ease;
     }
 
@@ -256,7 +255,7 @@
       display: flex;
       justify-content: flex-end;
       margin-top: 8px;
-      opacity: 1; /* Always visible on mobile */
+      opacity: 1;
     }
 
     .reaction-btn {
@@ -284,7 +283,6 @@
       transform: scale(0.95);
     }
 
-    /* Message Reactions Display */
     .message-reactions {
       display: flex;
       flex-wrap: wrap;
@@ -397,12 +395,13 @@
       border: 2px solid white;
     }
 
-    /* Input Area - FIXED FOR MOBILE */
+    /* ==================== FIXED BUTTON STYLES - ALL 4 VISIBLE ==================== */
     .input-container {
       display: flex;
-      gap: 8px;
-      margin-top: 10px;
+      gap: 10px;
+      margin-top: 15px;
       flex-wrap: wrap;
+      width: 100%;
     }
 
     .message-input {
@@ -424,9 +423,10 @@
 
     .action-buttons {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       flex-wrap: wrap;
-      justify-content: flex-end;
+      justify-content: flex-start;
+      align-items: center;
     }
 
     .action-btn {
@@ -452,7 +452,17 @@
 
     .action-btn.send:hover {
       background: #ff9429;
-      transform: scale(1.1) rotate(90deg);
+      transform: scale(1.1);
+    }
+
+    .action-btn.gif {
+      background: #444;
+      color: white;
+    }
+
+    .action-btn.gif:hover {
+      background: #555;
+      transform: scale(1.1);
     }
 
     .action-btn.skip {
@@ -475,23 +485,22 @@
       transform: scale(1.1);
     }
 
-    .action-btn.gif {
-      background: #222;
-      color: #aaa;
-    }
-
-    .action-btn.gif:hover {
-      background: #333;
-      color: #ff7a00;
-      transform: scale(1.1);
-    }
-
-    .action-btn.cancel {
+    .cancel-btn {
       background: #e63946;
       color: white;
+      border: none;
+      padding: 12px 24px;
       border-radius: 30px;
-      padding: 0 20px;
-      min-width: auto;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 15px;
+      width: 100%;
+      transition: all 0.3s;
+    }
+
+    .cancel-btn:hover {
+      background: #ff4d5e;
+      transform: scale(1.05);
     }
 
     /* Topic Selector */
@@ -541,7 +550,43 @@
       color: white;
     }
 
-    /* Toggle Switch */
+    /* Video Toggle */
+    .video-toggle-container {
+      margin: 20px 0;
+      padding: 15px;
+      background: #222;
+      border-radius: 12px;
+      border: 1px solid #333;
+    }
+
+    .video-toggle-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .video-toggle-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .video-toggle-title span:first-child {
+      font-size: 1.5rem;
+    }
+
+    .video-toggle-title span:last-child {
+      color: #ffaa40;
+      font-weight: 600;
+    }
+
+    .video-toggle-description {
+      color: #aaa;
+      font-size: 0.9rem;
+      margin-top: 5px;
+    }
+
     .switch {
       position: relative;
       display: inline-block;
@@ -591,42 +636,6 @@
 
     .slider.round:before {
       border-radius: 50%;
-    }
-
-    .video-toggle-container {
-      margin: 20px 0;
-      padding: 15px;
-      background: #222;
-      border-radius: 12px;
-      border: 1px solid #333;
-    }
-
-    .video-toggle-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-
-    .video-toggle-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .video-toggle-title span:first-child {
-      font-size: 1.5rem;
-    }
-
-    .video-toggle-title span:last-child {
-      color: #ffaa40;
-      font-weight: 600;
-    }
-
-    .video-toggle-description {
-      color: #aaa;
-      font-size: 0.9rem;
-      margin-top: 5px;
     }
 
     /* Video Call Container */
@@ -814,25 +823,6 @@
     @keyframes dots {
       0%, 60%, 100% { transform: scale(0.3); opacity: 0.3; }
       30% { transform: scale(1); opacity: 1; }
-    }
-
-    .cancel-btn {
-      background: #e63946;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 30px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.3s;
-      margin-top: 10px;
-      width: auto;
-      min-width: 150px;
-    }
-
-    .cancel-btn:hover {
-      background: #ff4d5e;
-      transform: scale(1.05);
     }
 
     /* Reaction Toast */
@@ -1113,7 +1103,7 @@
       display: none !important;
     }
 
-    /* Mobile Responsive - COMPLETELY FIXED */
+    /* ==================== MOBILE RESPONSIVE FIXES ==================== */
     @media (max-width: 768px) {
       .message {
         max-width: 90%;
@@ -1125,35 +1115,30 @@
 
       .input-container {
         flex-direction: column;
-        gap: 8px;
+        gap: 12px;
       }
-
+      
       .message-input {
         width: 100%;
         min-width: 100%;
       }
-
+      
       .action-buttons {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
         width: 100%;
-        gap: 5px;
+        gap: 8px;
       }
-
+      
       .action-btn {
         flex: 1;
-        min-width: 45px;
-        height: 45px;
+        min-width: 0;
+        width: auto;
+        height: 48px;
         border-radius: 30px;
-      }
-
-      .action-btn.send,
-      .action-btn.skip,
-      .action-btn.report,
-      .action-btn.gif {
-        border-radius: 30px;
-        padding: 0 10px;
+        font-size: 1rem;
+        padding: 0 5px;
       }
 
       .partner-info {
@@ -1216,12 +1201,14 @@
         grid-template-columns: repeat(2, 1fr);
       }
 
-      .action-btn {
-        font-size: 1rem;
-      }
-
       .action-buttons {
-        gap: 4px;
+        gap: 5px;
+      }
+      
+      .action-btn {
+        font-size: 0.9rem;
+        height: 44px;
+        padding: 0 3px;
       }
 
       .message {
@@ -1239,7 +1226,6 @@
       }
     }
 
-    /* Fix for very small screens */
     @media (max-width: 360px) {
       .action-buttons {
         flex-wrap: wrap;
@@ -1361,8 +1347,10 @@
     <div id="chatContainer" style="display: none;">
       <div id="partnerBanner" class="partner-banner"></div>
       <div id="randomMessages" class="messages-container"></div>
+      
+      <!-- ==================== RANDOM CHAT INPUT AREA - ALL 4 BUTTONS ==================== -->
       <div class="input-container">
-        <input type="text" id="randomInput" class="message-input" placeholder="Type a message..." maxlength="4000">
+        <input type="text" id="randomInput" class="message-input" placeholder="Type a message...">
         <div class="action-buttons">
           <button class="action-btn send" onclick="sendRandom()">➤</button>
           <button class="action-btn gif" onclick="openGifPicker('random')">🎨</button>
@@ -1376,8 +1364,10 @@
   <!-- Public Chat Tab -->
   <div id="publicTab" class="tab-content">
     <div id="publicMessages" class="messages-container"></div>
+    
+    <!-- ==================== PUBLIC CHAT INPUT AREA ==================== -->
     <div class="input-container">
-      <input type="text" id="publicInput" class="message-input" placeholder="Type a public message..." maxlength="4000">
+      <input type="text" id="publicInput" class="message-input" placeholder="Type a public message...">
       <div class="action-buttons">
         <button class="action-btn send" onclick="sendPublic()">➤</button>
         <button class="action-btn gif" onclick="openGifPicker('public')">🎨</button>
@@ -1562,7 +1552,6 @@
     });
 
     socket.on('randomStart', () => {
-      // Clear search timeout
       if (searchTimeout) {
         clearInterval(searchTimeout);
         searchTimeout = null;
@@ -1573,7 +1562,6 @@
       document.getElementById('randomMessages').innerHTML = '';
       document.getElementById('findMatchBtn').disabled = false;
       
-      // Remove loading if present
       const loading = document.getElementById('matchLoading');
       if (loading) loading.remove();
     });
@@ -1593,9 +1581,7 @@
       }
     });
 
-    // ==================== UPDATED REACTION HANDLER ====================
     socket.on('reactionReceived', (data) => {
-      // Show floating animation
       const anim = document.createElement('div');
       anim.className = 'reaction-animation';
       anim.innerText = data.emoji;
@@ -1604,14 +1590,12 @@
       document.body.appendChild(anim);
       setTimeout(() => anim.remove(), 1000);
 
-      // Show toast notification
       const toast = document.createElement('div');
       toast.className = `reaction-toast ${data.isSelf ? 'self' : ''}`;
       toast.innerText = data.isSelf ? `You reacted with ${data.emoji}` : `${data.from} reacted with ${data.emoji}`;
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 2000);
 
-      // Add reaction badge to message
       addReactionToMessage(data);
     });
 
@@ -1644,7 +1628,6 @@
       showToast(data.message, 'success');
     });
 
-    // ==================== WAITING STATUS ====================
     socket.on('waitingStatus', (data) => {
       const statusEl = document.getElementById('searchStatus');
       if (statusEl) {
@@ -1652,16 +1635,13 @@
       }
     });
 
-    // ==================== SEARCH CANCELLED ====================
     socket.on('searchCancelled', () => {
       showToast('Search cancelled', 'info');
     });
 
-    // ==================== VIDEO CALL EVENTS ====================
     socket.on('videoStart', async (data) => {
       console.log('Starting video call...', data);
       
-      // Clear search timeout
       if (searchTimeout) {
         clearInterval(searchTimeout);
         searchTimeout = null;
@@ -1839,9 +1819,7 @@
     container.scrollTop = container.scrollHeight;
   }
 
-  // ==================== NEW FUNCTION TO ADD REACTION TO MESSAGE ====================
   function addReactionToMessage(data) {
-    // Find the message by sender ID and approximate time (since we don't have message IDs from server)
     const messages = document.querySelectorAll('.message');
     let targetMessage = null;
     
@@ -1857,7 +1835,6 @@
     const reactionsDiv = targetMessage.querySelector('.message-reactions');
     if (!reactionsDiv) return;
     
-    // Check if this reaction already exists
     let existingReaction = null;
     const reactionButtons = reactionsDiv.querySelectorAll('.reaction-badge');
     
@@ -1873,17 +1850,14 @@
     const hasUserReacted = userReactions.get(reactionKey) === socket.id;
     
     if (existingReaction) {
-      // Update count
       let count = parseInt(existingReaction.dataset.count || '1') + 1;
       existingReaction.dataset.count = count;
       existingReaction.innerHTML = `${data.emoji} <span class="count">${count}</span>`;
       
-      // Mark as reacted if this user reacted
       if (hasUserReacted) {
         existingReaction.classList.add('reacted');
       }
     } else {
-      // Create new reaction badge
       const reactionBadge = document.createElement('span');
       reactionBadge.className = `reaction-badge ${hasUserReacted ? 'reacted' : ''}`;
       reactionBadge.dataset.emoji = data.emoji;
@@ -1893,7 +1867,6 @@
       reactionsDiv.appendChild(reactionBadge);
     }
     
-    // Animate
     const newBadge = reactionsDiv.querySelector(`[data-emoji="${data.emoji}"]`);
     if (newBadge) {
       newBadge.style.animation = 'badgePop 0.3s ease';
@@ -1908,21 +1881,7 @@
     const msg = input.value.trim();
     if (!msg) return;
     
-    // Add message locally immediately
-    addMessage({
-      name: userData?.username || 'Anonymous',
-      message: msg,
-      senderUuid: socket.id,
-      timestamp: Date.now(),
-      id: `msg-${Date.now()}-${Math.random()}`
-    }, 'public');
-    
-    socket.emit('publicMessage', {
-      name: userData?.username || 'Anonymous',
-      message: msg,
-      senderUuid: socket.id
-    });
-    
+    socket.emit('publicMessage', { message: msg });
     input.value = '';
   }
 
@@ -1931,25 +1890,10 @@
     const msg = input.value.trim();
     if (!msg) return;
     
-    // Add message locally immediately
-    addMessage({
-      name: userData?.username || 'Anonymous',
-      message: msg,
-      senderUuid: socket.id,
-      timestamp: Date.now(),
-      id: `msg-${Date.now()}-${Math.random()}`
-    }, 'random');
-    
-    socket.emit('randomMessage', {
-      name: userData?.username || 'Anonymous',
-      message: msg,
-      senderUuid: socket.id
-    });
-    
+    socket.emit('randomMessage', { message: msg });
     input.value = '';
   }
 
-  // ==================== UPDATED REACTION FUNCTIONS ====================
   function showEmojiPicker(targetUuid, messageId, btn) {
     const existing = document.querySelector('.emoji-picker');
     if (existing) existing.remove();
@@ -1964,7 +1908,6 @@
       emojiBtn.className = 'emoji-option';
       emojiBtn.innerText = emoji;
       
-      // Check if user already reacted with this emoji to this message
       const reactionKey = `${messageId}-${emoji}`;
       const hasReacted = userReactions.get(reactionKey) === socket.id;
       
@@ -1976,17 +1919,14 @@
       emojiBtn.onclick = (e) => {
         e.stopPropagation();
         
-        // Store that user has reacted
         userReactions.set(reactionKey, socket.id);
         
         socket.emit('sendReaction', { targetUuid, emoji, messageId });
         
-        // Update UI immediately
         const messageEl = btn.closest('.message');
         if (messageEl) {
           const reactionsDiv = messageEl.querySelector('.message-reactions');
           if (reactionsDiv) {
-            // Check if reaction already exists
             let existingReaction = null;
             const reactionBadges = reactionsDiv.querySelectorAll('.reaction-badge');
             
@@ -2043,26 +1983,22 @@
     closeModal('rateModal');
   }
 
-  // ==================== VIDEO TOGGLE ====================
   document.getElementById('videoToggle')?.addEventListener('change', (e) => {
     videoEnabled = e.target.checked;
     console.log(`Video call mode: ${videoEnabled ? 'ON' : 'OFF'}`);
   });
 
-  // ==================== RANDOM CHAT FUNCTIONS ====================
-  document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.topic-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const topic = btn.dataset.topic;
-        
-        if (btn.classList.contains('active')) {
-          btn.classList.remove('active');
-          selectedTopics = selectedTopics.filter(t => t !== topic);
-        } else if (selectedTopics.length < 3) {
-          btn.classList.add('active');
-          selectedTopics.push(topic);
-        }
-      });
+  document.querySelectorAll('.topic-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const topic = btn.dataset.topic;
+      
+      if (btn.classList.contains('active')) {
+        btn.classList.remove('active');
+        selectedTopics = selectedTopics.filter(t => t !== topic);
+      } else if (selectedTopics.length < 3) {
+        btn.classList.add('active');
+        selectedTopics.push(topic);
+      }
     });
   });
 
@@ -2102,7 +2038,6 @@
       videoEnabled: videoEnabled 
     });
     
-    // Update status messages over time
     let statusIndex = 0;
     const statusMessages = [
       'Still looking...',
@@ -2124,12 +2059,10 @@
       const loadingText = stillLoading.querySelector('.loading-text');
       
       if (elapsed < 10) {
-        // First 10 seconds - normal
         if (loadingText) {
           loadingText.innerHTML = `Finding your ${videoEnabled ? 'video' : 'text'} match...`;
         }
       } else if (elapsed < 30) {
-        // 10-30 seconds - still looking
         if (loadingText) {
           loadingText.innerHTML = `Still searching (${elapsed}s)...`;
         }
@@ -2137,7 +2070,6 @@
           statusEl.innerHTML = statusMessages[Math.min(1, statusIndex++)];
         }
       } else {
-        // 30+ seconds - suggest cancel
         if (loadingText) {
           loadingText.innerHTML = `Taking longer than expected (${elapsed}s)`;
         }
@@ -2148,39 +2080,13 @@
     }, 5000);
   }
 
-  function cancelSearch() {
-    // Clear the timeout
-    if (searchTimeout) {
-      clearInterval(searchTimeout);
-      searchTimeout = null;
-    }
-    
-    // Remove loading animation
-    const loading = document.getElementById('matchLoading');
-    if (loading) loading.remove();
-    
-    // Show topic selector again
-    document.getElementById('topicSelector').style.display = 'block';
-    
-    // Re-enable find button
-    const findBtn = document.getElementById('findMatchBtn');
-    findBtn.disabled = false;
-    findBtn.innerText = '🔍 Find Random Match';
-    
-    // Notify server to remove from waiting queue
-    socket.emit('cancelSearch');
-    
-    showToast('Search cancelled', 'info');
-  }
-
+  // ==================== SKIP FUNCTION ====================
   function skipRandom() {
-    // Clear any pending search
     if (searchTimeout) {
       clearInterval(searchTimeout);
       searchTimeout = null;
     }
     
-    // Remove loading animation
     const loading = document.getElementById('matchLoading');
     if (loading) loading.remove();
     
@@ -2196,13 +2102,33 @@
     document.getElementById('findMatchBtn').innerText = '🔍 Find Random Match';
   }
 
+  // ==================== REPORT FUNCTION ====================
   function reportUser() {
     if (confirm('Report this user for inappropriate behavior?')) {
       socket.emit('report', { reason: 'User reported' });
     }
   }
 
-  // ==================== GIF FUNCTIONS ====================
+  // ==================== CANCEL SEARCH FUNCTION ====================
+  function cancelSearch() {
+    if (searchTimeout) {
+      clearInterval(searchTimeout);
+      searchTimeout = null;
+    }
+    
+    const loading = document.getElementById('matchLoading');
+    if (loading) loading.remove();
+    
+    document.getElementById('topicSelector').style.display = 'block';
+    
+    const findBtn = document.getElementById('findMatchBtn');
+    findBtn.disabled = false;
+    findBtn.innerText = '🔍 Find Random Match';
+    
+    socket.emit('cancelSearch');
+    showToast('Search cancelled', 'info');
+  }
+
   function openGifPicker(type) {
     const url = prompt('Enter GIF or image URL:');
     if (url && url.startsWith('http')) {
@@ -2212,7 +2138,6 @@
     }
   }
 
-  // ==================== USERNAME CHANGE ====================
   function changeUsername() {
     const newName = prompt('Enter new username (3-20 characters):', userData?.username);
     if (newName && newName.length >= 3 && newName.length <= 20) {
@@ -2222,7 +2147,6 @@
     }
   }
 
-  // ==================== TAB SWITCHING ====================
   function switchTab(tab) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -2231,7 +2155,6 @@
     event.target.classList.add('active');
   }
 
-  // ==================== STATS FUNCTIONS ====================
   function updateStats() {
     if (!userData) return;
     
@@ -2270,7 +2193,6 @@
       : '<span class="no-badges">Keep chatting to unlock badges</span>';
   }
 
-  // ==================== UTILITY FUNCTIONS ====================
   function showToast(msg, type) {
     const toast = document.createElement('div');
     toast.className = 'toast ' + type;
