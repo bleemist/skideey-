@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: skideey
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: CLIENT_URL
+        value: https://skideey.onrender.com
+    plan: free
+    numReplicas: 1
