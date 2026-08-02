@@ -1,85 +1,34 @@
-require('dotenv').config();
 const express = require("express");
 const http = require("http");
-const https = require("https");
 const { Server } = require("socket.io");
 const fs = require('fs').promises;
 const path = require('path');
-const compression = require('compression');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const cors = require('cors');
-const rateLimit = require('express-rate-limit');
 
 const app = express();
 const server = http.createServer(app);
-
-// ==================== SECURITY MIDDLEWARE ====================
-// Helmet for security headers
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:", "http:"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https:", "http:"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https:", "http:"],
-      connectSrc: ["'self'", "wss:", "ws:", "https:", "http:"],
-      mediaSrc: ["'self'", "data:", "https:", "http:"],
-      frameSrc: ["'self'", "https:", "http:"]
-    }
-  },
-  crossOriginEmbedderPolicy: false,
-  crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
-
-// CORS configuration
-app.use(cors({
-  origin: process.env.CLIENT_URL || '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-Id']
-}));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false
-});
-app.use('/api/', limiter);
-
-// Logging
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-
-// Compression
-app.use(compression());
-
-// Body parsing with limits
-app.use(express.static("public"));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// ==================== CONFIGURATION ====================
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "change-me-in-production";
-const PORT = parseInt(process.env.PORT || '3000');
-const NODE_ENV = process.env.NODE_ENV || 'development';
-
-console.log(`🚀 Starting Skideey in ${NODE_ENV} mode`);
-
-// ==================== SOCKET.IO ====================
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || '*',
-    methods: ["GET", "POST"],
-    credentials: true
+    origin: "*",
+    methods: ["GET", "POST"]
   },
   transports: ['websocket', 'polling'],
   pingTimeout: 60000,
   pingInterval: 25000,
   maxHttpBufferSize: 1e8 // 100MB for media files
 });
+
+// ===== SERVE STATIC FILES =====
+// Serve index.html from the current directory (not just "public")
+app.use(express.static(__dirname));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+
+// Serve index.html on root
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+const ADMIN_PASSWORD = "Muyanja@6872@";
 
 // ==================== FILE-BASED PERSISTENCE ====================
 const DATA_FILE = path.join(__dirname, 'data', 'users.json');
@@ -160,13 +109,6 @@ setInterval(async () => {
 
 // Save on shutdown
 process.on('SIGINT', async () => {
-  console.log('\n💾 Saving data before shutdown...');
-  await saveUsers(userSessions);
-  await savePosts(globalPosts);
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
   console.log('\n💾 Saving data before shutdown...');
   await saveUsers(userSessions);
   await savePosts(globalPosts);
@@ -746,6 +688,7 @@ io.on("connection", async (socket) => {
   // ==================== BLOCK USER ====================
   socket.on("blockUser", (username) => {
     console.log(`🚫 ${user.username} blocked ${username}`);
+    // Broadcast block event
     io.emit("userBlocked", {
       blocker: user.username,
       blocked: username
@@ -887,6 +830,7 @@ function sendAdminStats() {
   
   const videoCallCount = videoCallUsers.size / 2;
   
+  // Count posts by type
   const postsByType = {
     post: globalPosts.filter(p => p.type === 'post' || !p.type).length,
     poll: globalPosts.filter(p => p.type === 'poll').length,
@@ -961,22 +905,7 @@ app.get("/health", (req, res) => {
     waiting: waitingUsers.size,
     uptime: process.uptime(),
     memory: process.memoryUsage(),
-    nodeVersion: process.version,
-    environment: NODE_ENV
-  });
-});
-
-// ==================== 404 HANDLER ====================
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not found' });
-});
-
-// ==================== ERROR HANDLER ====================
-app.use((err, req, res, next) => {
-  console.error('❌ Server error:', err.stack);
-  res.status(500).json({ 
-    error: 'Something went wrong!',
-    message: NODE_ENV === 'development' ? err.message : 'Internal server error'
+    nodeVersion: process.version
   });
 });
 
@@ -1005,7 +934,7 @@ function startServer(attemptPort) {
       const address = server.address();
       console.log(`\n🚀 Skideey server running successfully!`);
       console.log(`📱 Main app: http://localhost:${address.port}`);
-      console.log(`🔧 Admin: http://localhost:${address.port}/admin.html`);
+      console.log(`🔧 Admin: http://localhost:${address.port}/admin.html (if you have one)`);
       console.log(`💾 User data saved to: ${DATA_FILE}`);
       console.log(`📝 Posts data saved to: ${POSTS_FILE}`);
       console.log(`📊 Total saved users: ${Object.keys(userSessions).length}`);
@@ -1013,11 +942,10 @@ function startServer(attemptPort) {
       console.log(`🎥 Video calls supported with WebRTC`);
       console.log(`✅ All social features enabled`);
       console.log(`📱 Mobile-optimized UI with floating create button`);
-      console.log(`🔒 Security: Helmet, CORS, Rate limiting enabled`);
-      console.log(`📝 Logging: ${NODE_ENV === 'production' ? 'combined' : 'dev'} mode`);
       console.log(`\n⚡ Press Ctrl+C to stop the server\n`);
     });
 }
 
+const PORT = process.env.PORT || DEFAULT_PORT;
 console.log(`🔍 Attempting to start server on port ${PORT}...`);
 startServer(parseInt(PORT));
